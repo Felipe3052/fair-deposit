@@ -10,10 +10,10 @@ Bewertung: Impact 30% · Meta-Tooling 25% · Demo 25% · Technische Tiefe 20%.
 
 ### Tag 1 (Mo 26. Okt) — Fundament ✅
 - [x] Projekt-Struktur, Architektur-Doku, Umsetzungsplan
-- [ ] **Sofort:** $150 Model API Credits beantragen (Formular) — Kreditkarte erforderlich, Spend-Limit-Notification im Billing setzen
-- [ ] Meta Model API Key beschaffen, erster Test-Call (Vision + Bild-Edit) mit einem Testraumfoto
-- [ ] IKEA-Datensatz herunterladen, `prepare_catalog.py` laufen lassen, Katalog inspizieren
-- [ ] Repo auf GitHub **public** pushen (Regel-Anforderung)
+- [x] ~~$150 Model API Credits beantragen~~ — ✅ **Credits erhalten (26. Okt)**
+- [ ] Meta Model API Key in `.env.local` eintragen, erster Test-Call (Vision + Bild-Edit) mit einem Testraumfoto
+- [x] IKEA-Datensatz herunterladen, `prepare_catalog.py` laufen lassen — ✅ 30'486 Produkte, 12'296 kategorisiert
+- [x] Repo auf GitHub **public** pushen — ✅ https://github.com/Felipe3052/ai-interior-designer
 
 ### Tag 2 (Di 27. Okt) — Agent-Kern Backend
 - [ ] `meta-client.ts` (OpenAI-SDK → api.meta.ai/v1), erster Test-Call
