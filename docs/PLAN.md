@@ -19,7 +19,7 @@ Bewertung: Impact 30% · Meta-Tooling 25% · Demo 25% · Technische Tiefe 20%.
 - [ ] `meta-client.ts` (OpenAI-SDK → api.meta.ai/v1), erster Test-Call
 - [ ] Tool-Definitionen: `analyze-room` (Vision → RoomAnalysis JSON), `catalog-search`, `budget` (Budget-Split, Summen)
 - [ ] `design-agent.ts`: Agent-Loop mit Tool Calling + max. N Iterationen
-- [ ] `verify.ts`: Budget-/Konsistenz-Checks als reiner Code (kein LLM)
+- [ ] `verify.ts`: Budget-Checks als reiner Code + **Vision-basierter Bild-Listen-Check** (muse-spark sieht das generierte Bild und bestätigt die Produkte)
 - [ ] API-Route `/api/design` mit zod-Validierung + SSE-Streaming der Agent-Steps
 
 ### Tag 3 (Mi 28. Okt) — UI

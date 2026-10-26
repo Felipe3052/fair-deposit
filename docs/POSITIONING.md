@@ -61,3 +61,50 @@ Interaktive Auswahl: SAM 3.1 segmentiert die vorhandenen Möbel, der Nutzer klic
 | Bonus "Best Agentic Use-Case" ($5'000) | Wedge 1 sauber und sichtbar umsetzen |
 | Bonus "Best Creative Build" ($5'000) | Wedge 3 + Muse-Image-Multi-turn-Qualität |
 | Top 5 Indie ($25K–75K) | Alle drei Wedges + starkes 3-Min-Video + lauffähiger Live-Demo |
+
+## Rubric-Audit: Die Idee rückwärts von der Bewertung gebaut
+
+Jede Design-Entscheidung wird gegen die Bewertungsmatrix begründet. Projekt-Kriterium: **maximiert diese Entscheidung Punkte?**
+
+### Stage One (pass/fail) — Theme-Fit + Meta Model API
+
+| Kriterium | Status | Massnahme |
+|---|---|---|
+| Passt zum Theme ("Build for Your World") | ✅ | Schweizer Fokus, Problem aus eigener Erfahrung — im Pitch **nennen**, nicht nur zeigen |
+| Nutzt Meta Model API / Open-Weights | ✅ | Spark + Muse Image + SAM 3.1; im Video **explizit zeigen** (Modell-IDs im UI/Overlay sichtbar) |
+| Nicht gebannt ("Simple Image Analyzer" etc.) | ⚠️ Risiko | Agent-Transparenz ist der Beweis: Die UI zeigt die Tool-Loop, nicht nur ein Bild-Ergebnis |
+
+### Impact (30%) — wer profitiert, wie sehr?
+
+| Kriterium | Status | Massnahme |
+|---|---|---|
+| Wer profitiert | ✅ | Mieter / kleine Budgets in der Schweiz — Einrichtung ist ein Ausgaben-Posten von Tausenden CHF |
+| Wie viel zählt es | ⚠️ Schwächster Punkt der Idee ("nice-to-have"-Vibe) | **Impact-Story auf Vertrauen drehen:** "Das einzige Tool, bei dem das Bild die Quittung ist." Messbar machen: Demo zeigt konkrete CHF-Summe, die eingehalten wurde |
+| Könnte es was werden | ✅ | Marktbewiesen (kommerzielle Wettbewerber) — im Pitch als Validierung framen, nicht verstecken |
+
+### Use of Meta AI Tooling (25%) — beyond basic integration
+
+| Kriterium | Status | Massnahme |
+|---|---|---|
+| Kreativ orchestriert | ✅ | 3 Modelle als ein System: SAM-Masken steuern Muse-Image-Edit; Spark als Agent |
+| Überraschende Fähigkeit | ✅ Kernmoment | **Vision-basierte Verifikation:** muse-spark sieht das *generierte* Bild und prüft, ob die Einkaufslisten-Produkte sichtbar sind (Modell als Verifikator, nicht nur Generator). Gibt das Bild ein Produkt nicht her → Agent re-edited. Niemand macht das |
+| Kein "basic integration" | ✅ | Tool Calling, Selbst-Iteration, Structured Output, Multi-turn-Editing |
+
+### Demo (25%) — hält es live stand, ist das Video gut?
+
+| Kriterium | Status | Massnahme |
+|---|---|---|
+| Working, impressive | ✅ | Konsistentes Before/After + echte Einkaufsliste ist visuell überzeugend |
+| Hält live stand | ⚠️ Risiko | Agent-Loop braucht Zeit → SSE-Stream zeigt Fortschritt (Warten wird Teil der Demo); Ergebnisse cachen; Demo-Video **vor** Tag 7 aufnehmen; Live-Finals zeigen das Video — Video ist das primäre Artefakt |
+| Video genuinely cool | ⚠️ | Storyboard festlegen: 1) Foto + SAM-Klick "Couch bleibt, Tisch raus" 2) Agent-Steps live 3) Before/After + Einkaufsliste mit CHF-Summe 4) IKEA-Link-Klick |
+
+### Technical Depth (20%) — saubere Ausführung
+
+| Kriterium | Status | Massnahme |
+|---|---|---|
+| Sound engineering | ✅ | zod-Validierung, Retry/Timeout, Budget-/Verify-Logik als reiner Code, Tests für Budget-Split |
+| Refined | ⚠️ | Fehlerzustände, Ladeanimationen, sauberes README (englisch für Judges), Open-Source-Lizenz |
+
+### Fazit des Audits
+
+Die Idee deckt alle Kriterien ab; zwei echte Lücken sind identifiziert und eingeplant: (1) Impact-Story "Vertrauen/Bild = Quittung" statt technischem USP, (2) vision-basierte Verifikation als überraschende Fähigkeit. Die grössten Risiken sind nicht Ideen-, sondern Ausführungsrisiken: Latenz im Live-Demo und Videoproduktion.

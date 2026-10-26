@@ -39,7 +39,9 @@ Alternative (verworfen): Streamlit — am schnellsten, aber die Demo-/Produktqua
 
 **Warum Agent statt Pipeline:** Ein starrer Flow "Analyze → Redesign → Products" produziert ein Bild, dessen Möbel nicht zur Liste passen, und eine Liste, die das Budget sprengen kann. Der Agent-Loop behebt beides selbst: Budget überschritten → er wählt günstigere Alternativen und plant neu; Bild passt nicht zu gewähltem Produkt → er re-edited mit Referenzbildern. Das ist der Kern von "beyond a basic integration" (25% Meta-Tooling) und zielt auf den Bonus-Preis "Best Agentic Use-Case".
 
-**Anti-Halluzinierung (Kernprinzip, unverändert):** Das Modell wählt nur aus **vorhandenen Katalog-Einträgen** (per ID referenziert). Preise, Namen, Links kommen **ausschliesslich aus der Datenbank**, nie aus dem Modell. Budget-Split, Summen und Verifikation laufen programmatisch in Tools, nicht im Modell.
+**Anti-Halluzinierung (Kernprinzip, unverändert):** Das Modell wählt nur aus **vorhandenen Katalog-Einträgen** (per ID referenziert). Preise, Namen, Links kommen **ausschliesslich aus der Datenbank**, nie aus dem Modell. Budget-Split, Summen und Budget-Checks laufen programmatisch in Tools, nicht im Modell.
+
+**Vision-basierte Verifikation (der "überraschende" Moment):** Die Bild-Listen-Konsistenz prüft muse-spark per Vision — er sieht das *generierte* Redesign-Bild und bestätigt, dass die Einkaufslisten-Produkte tatsächlich sichtbar sind. Schlägt der Check fehl, re-edited der Agent mit schärferem Prompt/Referenzbildern. Das Modell wird also als **Verifikator**, nicht nur als Generator benutzt — das schliesst den Loop technisch und ist die stärkste Antwort auf "Did they surface capabilities that surprised even us?".
 
 ## Meta Model API Integration
 
@@ -114,7 +116,8 @@ interface ShoppingList {
 
 // 6. Verifikation des Agenten (letzte Tool-Instanz vor dem Output)
 interface DesignVerification {
-  imageListConsistent: boolean;   // Bild zeigt die gewählten Produkte
+  imageListConsistent: boolean;   // Vision-Check: muse-spark sieht das generierte Bild
+                                  // und bestätigt, dass die Listen-Produkte sichtbar sind
   withinBudget: boolean;
   keepRespected: boolean;         // Behalten-Markierungen umgesetzt
   issues: string[];               // offene Probleme → Agent iteriert
