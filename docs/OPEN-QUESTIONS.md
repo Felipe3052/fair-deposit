@@ -1,4 +1,12 @@
-# Technische Annahmen und offene Fragen
+# Offene Fragen und technische Annahmen
+
+## Mit dem offiziellen Participant Guide (26. Okt) geklärt
+
+- ✅ **Regeln veröffentlicht:** Repos **müssen public** sein · Teamgrösse max. 4 (Solo erlaubt) · Demo-Video **genau 3 Minuten** (primäres Bewertungs-Artefakt) · **New work only** — alles Gezeigte muss während des Hackathons entstanden sein und klar als eigener Beitrag identifizierbar sein.
+- ✅ **Kreditkarte erforderlich** für die $150 Model API Credits (Formular + Card; Pre-Authorization wird erstattet; Spend-Limit-Notification im Billing einrichten; Claim bis 4. Nov 9 PM ET, individuell pro Person).
+- ✅ **Anti-Projects:** Banned sind u.a. "Simple Image Analyzers", "Basic RAG Applications". Unser Projekt muss sich klar als **Multi-Step-Pipeline** lesen (Vision-Analyse → Bild-Redesign → Katalog-Auswahl per Structured Output → programmatische Budget-Logik), nicht als einfacher Bildanalysator. Bonus-Preis "Best Agentic Use-Case" ($5'000) passt dazu.
+- ✅ **Lizenz/Daten-Rechte:** Projects werden disqualifiziert, wenn "code, data, or assets" ohne Rechte genutzt werden. Datensatz **nicht committen** (bereits gitignored ✓), Quelle im UI/README kennzeichnen, Dataset-Lizenz vor Abgabe prüfen.
+- ✅ **Prämien:** Indie-Track bis $150K (1. Platz); Bonus "Best Creative Build" ($5'000, Muse Image!) und "Best Agentic Use-Case" ($5'000) sind realistische Zusatz-Chancen für dieses Projekt.
 
 ## Annahmen (dokumentiert, bewusst so entschieden)
 
@@ -14,9 +22,7 @@
 
 | Frage | Auswirkung | Wann klären |
 |---|---|---|
-| Dataset-Lizenz von ikea-us-products-2025 nicht explizit angegeben — reicht Quellenangabe für die Nutzung? | niedrig (Hackathon-Prototyp mit Kennzeichnung) | Tag 1 |
+| Dataset-Lizenz von ikea-us-products-2025 nicht explizit angegeben — reicht Quellenangabe für die Nutzung? (Recht auf Daten ist **Disqualifikations-Kriterium**) | mittel | Tag 1 |
 | Wie originalgetreu bleibt `muse-image-1.0` die Raumgeometrie beim Edit? Bestimmt die Bildqualität der Demo. | hoch | Tag 1–2 mit Testbildern |
-| Offizielle Regeln des Hackathons wurden erst zum Kickoff (26.10.) veröffentlicht — gibt es zwingende Submission-Anforderungen (Repo öffentlich? Demo-Link?)? | mittel | Tag 1 (dev.meta.ai prüfen) |
 | Genügt der USD→CHF-Fixkurs für die Jury, oder braucht es echte CHF-Preise (IKEA CH)? | mittel | Tag 5 entscheiden |
 | Rate Limits: Muse Image 150 req/min (pro Team) — für die Demo unkritisch, aber Caching der Ergebnisse einbauen? | niedrig | Tag 5 |
-| API-Key: braucht es eine Kreditkarte, um die $150 Credits zu aktivieren? | blockierend, falls ja | Tag 1 sofort |

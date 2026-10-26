@@ -135,6 +135,17 @@ Alle Routen validieren Inputs (zod) und kapseln API-Keys serverseitig.
 - `catalog.ts` — Katalog laden, nach Kategorie/Preis filtern, ID-Lookup
 - `budget.ts` — USD→CHF, Summen, Budget-Einhaltung
 
+## Abgrenzung (Anti-Project-Regel)
+
+Der Guide verbietet "Simple Image Analyzers" und "Basic RAG Applications". Dieses Projekt positioniert sich deshalb explizit als **Multi-Step-Pipeline mit programmatischer Geschäftslogik** — nicht als Bildanalyse-Demo:
+
+1. Vision-Analyse mit erzwungenem JSON-Schema (Structured Output)
+2. Kontextabhängige Bild-Bearbeitung (image-to-image, Originaltreue als Kernanforderung)
+3. Constrained Produkt-Auswahl: Modell wählt nur per ID aus einem echten Katalog
+4. Programmatische Budget-Einhaltung und CHF-Konversion in Code
+
+Zusatz-Chancen: Bonus-Preis **"Best Agentic Use-Case"** ($5'000) — die Pipeline als autonomer Agent-Loop mit Tool-Calls (muse-spark wählt selbst Werkzeuge: analyse → image → catalog → budget). Optional SAM 3.1-Overlay.
+
 ## Erweiterungspunkte (nur wenn Zeit)
 
 - SAM 3.1-Overlay (Before/After mit Segmentierung → starker Meta-Tooling-Bonus)

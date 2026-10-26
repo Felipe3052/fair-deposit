@@ -1,6 +1,8 @@
 # 10-Tage-Plan (26. Okt – 4. Nov 2026)
 
-Abgabe: **4. Nov, 9:00 PM ET** (= 5. Nov, 03:00 MEZ). Demo-Video **vor** dem letzten Tag aufnehmen.
+Abgabe: **4. Nov, 9:00 PM ET** (= 5. Nov, 03:00 MEZ). Demo-Video **genau 3 Minuten** (vorgeschrieben, primäres Bewertungs-Artefakt) — **vor** dem letzten Tag aufnehmen.
+
+**Harte Regeln:** Repo muss **public** sein · alles Gezeigte ist **New work only** (während des Hackathons gebaut) und klar als eigener Beitrag identifizierbar · Banned: u.a. "Simple Image Analyzers" → unsere Multi-Step-Pipeline muss klar im Vordergrund stehen.
 
 Bewertung: Impact 30% · Meta-Tooling 25% · Demo 25% · Technische Tiefe 20%.
 
@@ -8,8 +10,10 @@ Bewertung: Impact 30% · Meta-Tooling 25% · Demo 25% · Technische Tiefe 20%.
 
 ### Tag 1 (Mo 26. Okt) — Fundament ✅
 - [x] Projekt-Struktur, Architektur-Doku, Umsetzungsplan
+- [ ] **Sofort:** $150 Model API Credits beantragen (Formular) — Kreditkarte erforderlich, Spend-Limit-Notification im Billing setzen
 - [ ] Meta Model API Key beschaffen, erster Test-Call (Vision + Bild-Edit) mit einem Testraumfoto
 - [ ] IKEA-Datensatz herunterladen, `prepare_catalog.py` laufen lassen, Katalog inspizieren
+- [ ] Repo auf GitHub **public** pushen (Regel-Anforderung)
 
 ### Tag 2 (Di 27. Okt) — Kern-Pipeline Backend
 - [ ] `meta-client.ts`, `room-analysis.ts` (Vision → RoomAnalysis JSON)
@@ -34,16 +38,17 @@ Bewertung: Impact 30% · Meta-Tooling 25% · Demo 25% · Technische Tiefe 20%.
 
 ### Tag 6 (Sa 31. Okt) — Meta-Tooling-Bonus + Demo-Video
 - [ ] Optional SAM 3.1-Overlay (Möbel-Masken, "was wird ersetzt")
-- [ ] **Demo-Video aufnehmen** (Happy Path, ~2–3 Min, vor Tag 7 fertig!)
+- [ ] **Demo-Video aufnehmen: genau 3 Minuten** (Happy Path + eigene Features klar zeigen, vor Tag 7 fertig!)
 - [ ] README + kurzer Essay zur Idee (Impact-Argument)
 
 ### Tag 7 (So 1. Nov) — Puffer + Polish
 - [ ] UI-Polish, Ladeanimationen, Fehlerzustände
 - [ ] Deployment (Vercel oder eigenes Hosting) → öffentlicher Demo-Link
+- [ ] Repo auf GitHub public final pushen; Video-Link, Repo-Link und Teamliste fürs Submission-Formular bereitlegen
 
 ### Tag 8–9 (Mo 2. – Di 3. Nov) — Härtung
 - [ ] Mehrere Durchläufe, Randfälle, Performance (Ladezeiten)
-- [ ] Submission-Formular füllen (Offizielle Regeln prüfen — wurden erst am 26.10. erwartet!)
+- [ ] Submission-Formular füllen (Video-Link public, Repo public, alle Beteiligten gelistet)
 
 ### Tag 10 (Mi 4. Nov) — Abgabe
 - [ ] Frühestmöglich einreichen (Frist 9 PM ET)
