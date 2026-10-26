@@ -58,7 +58,8 @@ npm run dev
 
 ## Dokumentation
 
-- **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** — Architektur, Datenmodelle, API-Schnittstellen
+- **[docs/POSITIONING.md](docs/POSITIONING.md)** — Wettbewerbslandschaft, Differenzierungs-Wedges, Pitch
+- **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** — Architektur (Agent-Loop), Datenmodelle, API-Schnittstellen
 - **[docs/PLAN.md](docs/PLAN.md)** — 10-Tage-Plan (26. Okt – 4. Nov), Meilensteine
 - **[docs/DATA-SOURCES.md](docs/DATA-SOURCES.md)** — Woher Produktdaten/Preise kommen
 - **[docs/OPEN-QUESTIONS.md](docs/OPEN-QUESTIONS.md)** — Technische Annahmen, offene Fragen

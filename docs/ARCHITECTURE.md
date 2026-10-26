@@ -11,37 +11,35 @@ Begründung:
 
 Alternative (verworfen): Streamlit — am schnellsten, aber die Demo-/Produktqualität von Next.js zählt 25% der Bewertung; Vercel-Hosting ist kostenlos.
 
-## Pipeline (Happy Path)
+## Kern-Architektur: Agent-Loop statt starrer Pipeline
+
+**Wettbewerbskern** (siehe docs/POSITIONING.md): `muse-spark` läuft als **Agent mit Tools** — nicht als drei hintereinander geschaltete Calls. Der Agent entscheidet selbst, in welcher Reihenfolge er Werkzeuge braucht, und **iteriert**, bis Budget und Bild-Listen-Konsistenz stimmen.
 
 ```
-┌──────────┐   1. Upload Foto      ┌─────────────────────────────────────────┐
-│ Browser  │ ────────────────────▶ │ POST /api/analyze                       │
-│ (page)   │                       │ muse-spark-1.3 Vision:                  │
-└──────────┘                       │  → Raumtyp, Stilmerkmale, Farbpalette,  │
-                                   │    vorhandene Möbel, Beleuchtung (JSON) │
-                                   └────────────────┬────────────────────────┘
-                                                    │ 2. RoomAnalysis
-                                   ┌────────────────▼────────────────────────┐
-                                   │ POST /api/redesign                      │
-                                   │ muse-image-1.0 image-to-image Edit:     │
-                                   │  → visualisiertes Redesign (Bild)       │
-                                   └────────────────┬────────────────────────┘
-                                                    │ 3. RedesignImage
-                                   ┌────────────────▼────────────────────────┐
-                                   │ POST /api/products                      │
-                                   │ muse-spark-1.3 Structured Output:       │
-                                   │  → passende Produkt-IDs aus lokalem     │
-                                   │    Katalog (reale Daten, kein Halluz.)  │
-                                   │ + Budget-Filter + Summe (programmatisch)│
-                                   └────────────────┬────────────────────────┘
-                                                    │ 4. ShoppingList
-                                   ┌────────────────▼────────────────────────┐
-                                   │ UI: Before/After + Einkaufsliste        │
-                                   │ (Bild, Name, Preis CHF, IKEA-Link)      │
-                                   └─────────────────────────────────────────┘
+┌──────────┐   Upload Foto, Stil,    ┌──────────────────────────────────────────┐
+│ Browser  │   Budget (CHF),         │ POST /api/design  (SSE-Streaming)        │
+│ (page)   │   Keep/Replace-Masken   │                                          │
+└──────────┘ ─────────────────────▶ │ muse-spark AGENT-LOOP:                   │
+                                    │                                          │
+                                    │  tool analyze_room        (Vision, JSON) │
+                                    │  tool segment_furniture   (SAM 3.1)      │
+                                    │  tool plan_budget         (programmatisch)│
+                                    │  tool search_catalog      (echter Katalog)│
+                                    │  tool edit_room_image     (muse-image)   │
+                                    │  tool verify              (Checks)       │
+                                    │                                          │
+                                    │  → iteriert bis Budget ≤ und Bild ↔ Liste│
+                                    └────────────────┬─────────────────────────┘
+                                                     │ DesignResult (Stream)
+                                    ┌────────────────▼─────────────────────────┐
+                                    │ UI: Before/After + Einkaufsliste         │
+                                    │ (Bild, Name, Preis CHF, IKEA-Link)       │
+                                    └──────────────────────────────────────────┘
 ```
 
-**Anti-Halluzinierung (Kernprinzip):** Das Modell wählt nur aus **vorhandenen Katalog-Einträgen** (per ID referenziert). Preise, Namen, Links kommen **ausschliesslich aus der Datenbank**, nie aus dem Modell. Die Gesamtsumme wird in Code berechnet, nicht vom Modell.
+**Warum Agent statt Pipeline:** Ein starrer Flow "Analyze → Redesign → Products" produziert ein Bild, dessen Möbel nicht zur Liste passen, und eine Liste, die das Budget sprengen kann. Der Agent-Loop behebt beides selbst: Budget überschritten → er wählt günstigere Alternativen und plant neu; Bild passt nicht zu gewähltem Produkt → er re-edited mit Referenzbildern. Das ist der Kern von "beyond a basic integration" (25% Meta-Tooling) und zielt auf den Bonus-Preis "Best Agentic Use-Case".
+
+**Anti-Halluzinierung (Kernprinzip, unverändert):** Das Modell wählt nur aus **vorhandenen Katalog-Einträgen** (per ID referenziert). Preise, Namen, Links kommen **ausschliesslich aus der Datenbank**, nie aus dem Modell. Budget-Split, Summen und Verifikation laufen programmatisch in Tools, nicht im Modell.
 
 ## Meta Model API Integration
 
@@ -58,11 +56,12 @@ const client = new OpenAI({
 
 | Zweck | Modell | Modus | Anmerkung |
 |---|---|---|---|
-| Raum-Analyse, Produkt-Auswahl | `muse-spark-1.3` | Chat/Responses API, Structured Output (JSON Schema) | 1M Kontext; Vision via `input_image` (Base64 data URL) |
-| Raum-Redesign | `muse-image-1.0` | `/v1/images/edits` (image-to-image) | Originalfoto + Stil/Budget-Prompt → bearbeitetes Bild |
-| Optional: Möbel-Masken | SAM 3.1 | API | Segmentierung vorhandener Möbel → "was bleibt / was wird ersetzt"-Overlay |
+| Agent-Loop (Planung, Produkt-Auswahl, Verifikation) | `muse-spark-1.3` | Responses API mit **Tool Calling** + Structured Output | 1M Kontext; Vision via `input_image` (Base64 data URL) |
+| Raum-Redesign | `muse-image-1.0` | `/v1/images/edits` (image-to-image) | Originalfoto + **Referenzbilder der gewählten Produkte** → Edit mit genau diesen Stücken |
+| Möbel-Segmentierung | SAM 3.1 | API | Masken für "Behalten / Ersetzen"; steuern den Bild-Edit |
+| Optional: Sprachinput | Muse Voice Transcribe | API | "Die Couch bleibt, der Tisch raus" — nur falls Zeit |
 
-Kosten (~$150 Credits, Standard-Mode): Spark $1.25/M input, $4.25/M output Tokens; Muse Image $0.01/Bild. Ein kompletter Durchlauf liegt im Cent-Bereich.
+Kosten (~$150 Credits, Standard-Mode): Spark $1.25/M input, $4.25/M output Tokens; Muse Image $0.01/Bild; SAM 3.1 $2.50/1'000 Bilder. Ein kompletter Agent-Durchlauf liegt im Rappen-/Cent-Bereich.
 
 ## Datenmodelle (TypeScript)
 
@@ -72,6 +71,8 @@ interface DesignRequest {
   image: File;                 // Raumfoto
   style: string;               // z.B. "skandinavisch", "modern", "boho"
   budgetChf: number;           // Budget in CHF
+  keep?: string[];             // zu behaltende Objekte (SAM-Masken/Labels)
+  replace?: string[];          // zu ersetzende Objekte
 }
 
 // 2. Ergebnis der Vision-Analyse (Structured Output, Schema erzwungen)
@@ -92,26 +93,43 @@ interface Product {
   priceUsd: number;
   priceChf: number;            // mit fixem Kurs konvertiert (siehe DATA-SOURCES.md)
   currency: "CHF";
-  imageUrl: string;            // echtes Produktbild
+  imageUrl: string;            // echtes Produktbild (als Muse-Image-Referenz nutzbar)
   sourceUrl: string;           // echte IKEA-Produktseite
   dimensions?: string;
 }
 
-// 4. Ergebnis der Produkt-Auswahl
+// 4. Budget-Plan (programmatisch, vor der Produktsuche)
+interface BudgetPlan {
+  totalChf: number;
+  allocation: { category: string; maxChf: number }[];  // z.B. sofa 45%, lamp 10% ...
+}
+
+// 5. Ergebnis der Produkt-Auswahl
 interface ShoppingList {
-  items: (Product & { reason: string })[];  // reason: kurze Begründung des Modells
+  items: (Product & { reason: string })[];  // reason: kurze Begründung des Agenten
   totalChf: number;                          // programmatisch berechnet
   budgetChf: number;
   withinBudget: boolean;
 }
 
-// 5. DesignSession (Client-State / Persistenz-Kandidat)
+// 6. Verifikation des Agenten (letzte Tool-Instanz vor dem Output)
+interface DesignVerification {
+  imageListConsistent: boolean;   // Bild zeigt die gewählten Produkte
+  withinBudget: boolean;
+  keepRespected: boolean;         // Behalten-Markierungen umgesetzt
+  issues: string[];               // offene Probleme → Agent iteriert
+}
+
+// 7. DesignSession (Client-State / Persistenz-Kandidat)
 interface DesignSession {
   id: string;
   request: DesignRequest;
   analysis: RoomAnalysis;
-  redesignImageUrl: string;
+  budgetPlan: BudgetPlan;
   shoppingList: ShoppingList;
+  redesignImageUrl: string;
+  verification: DesignVerification;
+  agentSteps: { tool: string; summary: string }[];   // für UI-Transparenz
   createdAt: string;
 }
 ```
@@ -120,34 +138,36 @@ interface DesignSession {
 
 | Route | Methode | Input | Output | Modell-Aufruf |
 |---|---|---|---|---|
-| `/api/analyze` | POST | multipart: image | `RoomAnalysis` | muse-spark (Vision) |
-| `/api/redesign` | POST | JSON: base64 image + style + budget | `{ redesignImageUrl }` | muse-image (edit) |
-| `/api/products` | POST | JSON: analysis + style + budgetChf | `ShoppingList` | muse-spark (Structured Output) |
+| `/api/design` | POST | multipart: image + style + budgetChf (+ keep/replace) | SSE-Stream der Agent-Steps → `DesignSession` | muse-spark Agent-Loop (ruft SAM + muse-image als Tools) |
+| `/api/segment` | POST | multipart: image | Masken/Labels vorhandener Möbel | SAM 3.1 |
 | `/api/session` | POST/GET | — | `DesignSession` speichern/laden | — (optional, Phase 3) |
 
-Alle Routen validieren Inputs (zod) und kapseln API-Keys serverseitig.
+Alle Routen validieren Inputs (zod) und kapseln API-Keys serverseitig. SSE-Streaming, damit die UI die Agent-Schritte live zeigt — Agent-Transparenz ist Demo-Futter (25%) und Technical-Depth-Beweis.
 
 ## Projektmodul-Verantwortlichkeiten (`src/lib/`)
 
 - `meta-client.ts` — Singleton OpenAI-Client, Retry, Timeout
-- `room-analysis.ts` — Prompt + JSON-Schema für die Raum-Analyse
-- `redesign.ts` — Bild-Edit-Call (Originalfoto + Stilbeschreibung)
+- `agent/design-agent.ts` — Tool-Definitionen + Agent-Loop (max. N Iterationen)
+- `agent/tools/analyze-room.ts` — Vision-Analyse (Structured Output)
+- `agent/tools/segment.ts` — SAM 3.1-Aufruf, Masken → Behalten/Ersetzen
+- `agent/tools/catalog-search.ts` — Katalog-Filter per Kategorie/Budget, ID-Validierung
+- `agent/tools/edit-image.ts` — muse-image image-to-image mit Produkt-Referenzbildern
+- `agent/tools/verify.ts` — Konsistenz-/Budget-Checks (reiner Code, kein LLM)
 - `catalog.ts` — Katalog laden, nach Kategorie/Preis filtern, ID-Lookup
-- `budget.ts` — USD→CHF, Summen, Budget-Einhaltung
+- `budget.ts` — Budget-Split-Heuristik, USD→CHF, Summen
 
 ## Abgrenzung (Anti-Project-Regel)
 
-Der Guide verbietet "Simple Image Analyzers" und "Basic RAG Applications". Dieses Projekt positioniert sich deshalb explizit als **Multi-Step-Pipeline mit programmatischer Geschäftslogik** — nicht als Bildanalyse-Demo:
+Der Guide verbietet "Simple Image Analyzers" und "Basic RAG Applications". Dieses Projekt positioniert sich deshalb explizit als **Multi-Step-Agent mit programmatischer Geschäftslogik** — nicht als Bildanalyse-Demo:
 
-1. Vision-Analyse mit erzwungenem JSON-Schema (Structured Output)
-2. Kontextabhängige Bild-Bearbeitung (image-to-image, Originaltreue als Kernanforderung)
+1. Autonomer Agent-Loop mit Tool-Calls und Selbst-Iteration (Budget, Konsistenz)
+2. Vision-Analyse mit erzwungenem JSON-Schema (Structured Output)
 3. Constrained Produkt-Auswahl: Modell wählt nur per ID aus einem echten Katalog
 4. Programmatische Budget-Einhaltung und CHF-Konversion in Code
-
-Zusatz-Chancen: Bonus-Preis **"Best Agentic Use-Case"** ($5'000) — die Pipeline als autonomer Agent-Loop mit Tool-Calls (muse-spark wählt selbst Werkzeuge: analyse → image → catalog → budget). Optional SAM 3.1-Overlay.
+5. SAM 3.1 + Muse Image + Muse Spark als abgestimmtes System
 
 ## Erweiterungspunkte (nur wenn Zeit)
 
-- SAM 3.1-Overlay (Before/After mit Segmentierung → starker Meta-Tooling-Bonus)
+- Muse Voice Transcribe (Sprachinput für Behalten/Ersetzen)
 - Design-Session-Historie (localStorage oder SQLite)
 - Weitere Raumtypen (Schlafzimmer, Küche)

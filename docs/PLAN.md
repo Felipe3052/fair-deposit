@@ -15,31 +15,34 @@ Bewertung: Impact 30% · Meta-Tooling 25% · Demo 25% · Technische Tiefe 20%.
 - [ ] IKEA-Datensatz herunterladen, `prepare_catalog.py` laufen lassen, Katalog inspizieren
 - [ ] Repo auf GitHub **public** pushen (Regel-Anforderung)
 
-### Tag 2 (Di 27. Okt) — Kern-Pipeline Backend
-- [ ] `meta-client.ts`, `room-analysis.ts` (Vision → RoomAnalysis JSON)
-- [ ] `redesign.ts` (muse-image image-to-image)
-- [ ] `catalog.ts` + `budget.ts` (Filter, CHF, Summen)
-- [ ] API-Routen `/api/analyze`, `/api/redesign`, `/api/products` mit zod-Validierung
+### Tag 2 (Di 27. Okt) — Agent-Kern Backend
+- [ ] `meta-client.ts` (OpenAI-SDK → api.meta.ai/v1), erster Test-Call
+- [ ] Tool-Definitionen: `analyze-room` (Vision → RoomAnalysis JSON), `catalog-search`, `budget` (Budget-Split, Summen)
+- [ ] `design-agent.ts`: Agent-Loop mit Tool Calling + max. N Iterationen
+- [ ] `verify.ts`: Budget-/Konsistenz-Checks als reiner Code (kein LLM)
+- [ ] API-Route `/api/design` mit zod-Validierung + SSE-Streaming der Agent-Steps
 
 ### Tag 3 (Mi 28. Okt) — UI
 - [ ] Upload + Stil/Budget-Auswahl
+- [ ] **Live-Anzeige der Agent-Steps** (SSE) — Transparenz ist Demo-Futter
 - [ ] Before/After-Ansicht mit Ladezuständen
 - [ ] Einkaufsliste: Produktkarten (Bild, Name, Preis, Link), Budgetanzeige
 
-### Tag 4 (Do 29. Okt) — **End-to-End-Meilenstein**
-- [ ] Kompletter Durchlauf mit 3 verschiedenen Raumfotos funktioniert
+### Tag 4 (Do 29. Okt) — **End-to-End-Meilenstein (ohne SAM)**
+- [ ] Kompletter Agent-Durchlauf mit 3 verschiedenen Raumfotos funktioniert
+- [ ] Bild ↔ Einkaufsliste konsistent (Agent iteriert, bis verify besteht)
 - [ ] Budget wird eingehalten (Summen-Logik verifiziert)
 - [ ] Fehlerfälle abgefangen (schlechtes Foto, API-Fehler, leere Produktergebnisse)
 
-### Tag 5 (Fr 30. Okt) — Qualität der KI-Ergebnisse
-- [ ] Prompt-Tuning: Redesign soll originalgetreu bleiben (Raumgeometrie!)
-- [ ] Produkt-Auswahl evaluieren: passt Stil? Passt Budget?
-- [ ] Falls Redesign-Originaltreue schwach: Muse Image Multi-turn-Refinement nutzen
+### Tag 5 (Fr 30. Okt) — SAM 3.1 + Qualität
+- [ ] SAM 3.1-Segmentierung (`/api/segment`), Behalten/Ersetzen-Auswahl in der UI
+- [ ] Muse-Image-Edit mit SAM-Masken + Produkt-Referenzbildern
+- [ ] Prompt-Tuning: Originaltreue der Raumgeometrie evaluieren (Multi-turn-Refinement nutzen)
+- [ ] Falls Zeit: Muse Voice Transcribe für Sprachinput
 
 ### Tag 6 (Sa 31. Okt) — Meta-Tooling-Bonus + Demo-Video
-- [ ] Optional SAM 3.1-Overlay (Möbel-Masken, "was wird ersetzt")
-- [ ] **Demo-Video aufnehmen: genau 3 Minuten** (Happy Path + eigene Features klar zeigen, vor Tag 7 fertig!)
-- [ ] README + kurzer Essay zur Idee (Impact-Argument)
+- [ ] **Demo-Video aufnehmen: genau 3 Minuten** (Momentum: SAM-Auswahl → Agent-Steps live → konsistentes Before/After + Einkaufsliste; vor Tag 7 fertig!)
+- [ ] README + kurzer Essay zur Idee (Impact-Argument: Schweizer Fokus, "Build for Your World")
 
 ### Tag 7 (So 1. Nov) — Puffer + Polish
 - [ ] UI-Polish, Ladeanimationen, Fehlerzustände
