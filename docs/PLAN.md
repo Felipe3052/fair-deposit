@@ -2,7 +2,7 @@
 
 Abgabe: **4. Nov, 9:00 PM ET** (= 5. Nov, 03:00 MEZ). Demo-Video **genau 3 Minuten** (vorgeschrieben, primäres Bewertungs-Artefakt) — **vor** dem letzten Tag aufnehmen.
 
-**Harte Regeln:** Repo muss **public** sein · alles Gezeigte ist **New work only** (während des Hackathons gebaut) und klar als eigener Beitrag identifizierbar · Banned: u.a. "Simple Image Analyzers" → unsere Multi-Step-Pipeline muss klar im Vordergrund stehen.
+**Harte Regeln:** Repo muss bei der **Submission public** sein — während der Bauphase **privat**, Umschalten auf public **spätestens 3. Nov** (vor Abgabe) · alles Gezeigte ist **New work only** (während des Hackathons gebaut) und klar als eigener Beitrag identifizierbar · Banned: u.a. "Simple Image Analyzers" → unsere Multi-Step-Pipeline muss klar im Vordergrund stehen.
 
 Bewertung: Impact 30% · Meta-Tooling 25% · Demo 25% · Technische Tiefe 20%.
 
@@ -13,7 +13,7 @@ Bewertung: Impact 30% · Meta-Tooling 25% · Demo 25% · Technische Tiefe 20%.
 - [x] ~~$150 Model API Credits beantragen~~ — ✅ **Credits erhalten (26. Okt)**
 - [ ] Meta Model API Key in `.env.local` eintragen, erster Test-Call (Vision + Bild-Edit) mit einem Testraumfoto
 - [x] IKEA-Datensatz herunterladen, `prepare_catalog.py` laufen lassen — ✅ 30'486 Produkte, 12'296 kategorisiert
-- [x] Repo auf GitHub **public** pushen — ✅ https://github.com/Felipe3052/ai-interior-designer
+- [x] Repo auf GitHub pushen — ✅ privat (https://github.com/Felipe3052/ai-interior-designer), **Umschalten auf public spätestens 3. Nov**
 
 ### Tag 2 (Di 27. Okt) — Agent-Kern Backend
 - [ ] `meta-client.ts` (OpenAI-SDK → api.meta.ai/v1), erster Test-Call
@@ -47,7 +47,7 @@ Bewertung: Impact 30% · Meta-Tooling 25% · Demo 25% · Technische Tiefe 20%.
 ### Tag 7 (So 1. Nov) — Puffer + Polish
 - [ ] UI-Polish, Ladeanimationen, Fehlerzustände
 - [ ] Deployment (Vercel oder eigenes Hosting) → öffentlicher Demo-Link
-- [ ] Repo auf GitHub public final pushen; Video-Link, Repo-Link und Teamliste fürs Submission-Formular bereitlegen
+- [ ] **Repo von privat auf public umschalten** (`gh repo edit Felipe3052/ai-interior-designer --visibility public --accept-visibility-change-consequences`); Video-Link, Repo-Link und Teamliste fürs Submission-Formular bereitlegen
 
 ### Tag 8–9 (Mo 2. – Di 3. Nov) — Härtung
 - [ ] Mehrere Durchläufe, Randfälle, Performance (Ladezeiten)
