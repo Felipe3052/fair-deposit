@@ -15,12 +15,12 @@ Bewertung: Impact 30% · Meta-Tooling 25% · Demo 25% · Technische Tiefe 20%.
 - [x] IKEA-Datensatz herunterladen, `prepare_catalog.py` laufen lassen — ✅ 30'486 Produkte, 12'296 kategorisiert
 - [x] Repo auf GitHub pushen — ✅ privat (https://github.com/Felipe3052/ai-interior-designer), **Umschalten auf public spätestens 3. Nov**
 
-### Tag 2 (Di 27. Okt) — Agent-Kern Backend
-- [ ] `meta-client.ts` (OpenAI-SDK → api.meta.ai/v1), erster Test-Call
-- [ ] Tool-Definitionen: `analyze-room` (Vision → RoomAnalysis JSON), `catalog-search`, `budget` (Budget-Split, Summen)
-- [ ] `design-agent.ts`: Agent-Loop mit Tool Calling + max. N Iterationen
-- [ ] `verify.ts`: Budget-Checks als reiner Code + **Vision-basierter Bild-Listen-Check** (muse-spark sieht das generierte Bild und bestätigt die Produkte)
-- [ ] API-Route `/api/design` mit zod-Validierung + SSE-Streaming der Agent-Steps
+### Tag 2 (Di 27. Okt) — Agent-Kern Backend ✅ (26. Okt abends)
+- [x] `meta-client.ts` (OpenAI-SDK → api.meta.ai/v1), erster Test-Call ✅ (Tool-Calling + Modell-IDs verifiziert)
+- [x] Tool-Definitionen: `search_catalog` (lokaler Filter), `edit_room_image` (muse-image), `verify`, `finish`
+- [x] `design-agent.ts`: Agent-Loop mit Tool Calling, max. 8 Iterationen
+- [x] `verify.ts`: Budget-Checks als reiner Code + **Vision-basierter Bild-Listen-Check** (Env-Flag `ENABLE_VISION_VERIFY`)
+- [x] API-Route `/api/design` mit zod-Validierung + SSE-Streaming der Agent-Steps ✅ (Build verifiziert)
 
 ### Tag 3 (Mi 28. Okt) — UI
 - [ ] Upload + Stil/Budget-Auswahl

@@ -65,6 +65,14 @@ const client = new OpenAI({
 
 Kosten (~$150 Credits, Standard-Mode): Spark $1.25/M input, $4.25/M output Tokens; Muse Image $0.01/Bild; SAM 3.1 $2.50/1'000 Bilder. Ein kompletter Agent-Durchlauf liegt im Rappen-/Cent-Bereich.
 
+### Erkenntnisse aus dem ersten Test-Call (26. Okt, mit dem echten Key verifiziert)
+
+1. **Modell-IDs bestätigt** via `/v1/models` (kostenlos): `muse-spark-1.3`, `muse-image-1.0`, `sam-3.1`, `muse-wonder-1.0`, `muse-voice-transcribe-1.0`.
+2. **muse-spark ist ein Reasoning-Modell:** Bei `max_tokens: 200` gingen 198 Tokens für Reasoning drauf, bevor Output kam (leerer Content). Konsequenz: grosszügige `max_tokens` (≥ 1500) pro Agent-Call setzen.
+3. **`tool_choice` unterstützt nur `"auto"`** — `"required"` und benannte Functions geben HTTP 400. Der Agent-Prompt muss die Reihenfolge steuern, nicht `tool_choice`.
+4. **Reasoning-Overhead:** ~550 Reasoning-Tokens pro Call zusätzlich — bei ~8 Agent-Iterationen pro Design-Run unkritisch (< $0.05/Run).
+5. Budget-Diskiplin: Caching von Ergebnissen, Iterations-Cap, Vision-Checks über Env-Flag abschaltbar.
+
 ## Datenmodelle (TypeScript)
 
 ```typescript
