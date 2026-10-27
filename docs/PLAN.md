@@ -34,12 +34,14 @@ Bewertung (Stage 2, 0–10): Impact 30% · Meta-Tooling 25% · Demo 25% · Techn
 - [ ] Offen: Duplikate zwischen überlappenden Zoom-Kacheln (Agent verwirft sie selbst, kostet aber Calls) → Tag 5
 - [ ] Workshop "Agents 102: Verifiable Agents" (12:00 ET = 17:00 MEZ) anschauen → Erkenntnisse übernehmen
 
-### Tag 4 (Do 29. Okt) — UI + End-to-End-Meilenstein
-- [ ] Setup (Rule Pack, Daten, Bauteilalter), Multi-Foto-Upload, Forderungen erfassen
-- [ ] Live-Agent-Steps (AgentSteps wiederverwenden)
-- [ ] FindingsViewer: Fotos mit Masken, Klick Befund ↔ Liste
-- [ ] ShareTable: Position, Alter/Lebensdauer, Anteil, Regelzitat, Summe vs. Forderung
-- [ ] **E2E:** kompletter Durchlauf mit einer Demo-Wohnung funktioniert
+### Tag 4 (Do 29. Okt) — UI + End-to-End-Meilenstein ✅ (vorgezogen auf 27. Okt)
+- [x] Setup (Rule Pack, Daten, Bauteilalter + Material), Multi-Foto-Upload mit Raumnamen, Forderungen erfassen, "Load demo apartment" (`public/demo/`)
+- [x] Live-Agent-Steps (AgentSteps wiederverwendet) + Sprechblase mit aktuellem Schritt
+- [x] PhotoEvidence: Fotos mit SAM-Masken + Boxen (gestrichelt bis bestätigt), Klick Befund ↔ Liste
+- [x] ShareTable: Position, Alter/Lebensdauer, Restwert-%, Forderung vs. Anteil, Regelquelle, "Not legal advice"
+- [x] Maskottchen (Inspektor-Plüschfigur, per `scripts/spike/generate-mascot.mjs` mit Muse Image erzeugt) in Header, Hero und Lauf-Ansicht
+- [x] **E2E im Browser:** Demo-Wohnung, verifiziert, 2'900 → 391.50 CHF; `npm run build` grün
+- Offen → Tag 5: **Maskenqualität** — Kritzeleien-Maske greift das Sofa, Kratzer-Maske füllt den ganzen Bodenstreifen. Plausibilitätscheck prüft nur Box-Abdeckung; braucht zusätzlich "Maske darf Box nicht fast vollständig füllen" bzw. Spark-Check auf Masken-Crop.
 
 ### Tag 5 (Fr 30. Okt) — Verifikation + Agent-Tiefe
 - [ ] `verify-report.ts`: Code-Checks + Spark-Gegenprüfung auf Crops, Agent iteriert bei Fehlern
