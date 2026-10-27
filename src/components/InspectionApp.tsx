@@ -42,6 +42,17 @@ const DEMO = {
 const inputClass = "w-full rounded-xl border border-[#dfe3da] bg-white px-3 py-2 text-sm text-[#2c3a30] outline-none focus:border-[#6f866e] focus:ring-2 focus:ring-[#6f866e]/20";
 const labelClass = "mb-1 block text-xs font-medium text-[#66746a]";
 
+const ROOM_SUGGESTIONS = ["Living room", "Kitchen", "Bathroom", "Bedroom", "Hallway", "Kids' room", "Office", "Balcony", "Storage room"];
+
+/** Kamera-/Messenger-Namen (IMG_1234, PXL_2026…, WhatsApp Image …) sagen nichts über den Raum → leer lassen und nachfragen. */
+const GENERIC_FILE_NAME = /^(img|image|dsc[nf]?|dcim|pxl|mvimg|photo|pic|picture|screenshot|screen shot|whatsapp image|signal|telegram|wp|bild|foto|scan|capture|snapchat)(?=[\s_.-]*(\d|$))|^[\d\s_.-]+$|\d{6,}|^[0-9a-f-]{16,}$/i;
+
+function roomFromFileName(fileName: string): string {
+  const base = fileName.replace(/\.[^.]+$/, "").trim();
+  if (GENERIC_FILE_NAME.test(base)) return "";
+  return base.replace(/[-_]+/g, " ").replace(/\s+/g, " ").slice(0, 60);
+}
+
 let uid = 0;
 const nextKey = (prefix: string) => `${prefix}${++uid}`;
 
@@ -63,6 +74,7 @@ export default function InspectionApp() {
   const [report, setReport] = useState<InspectionReport | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [focusPhotoId, setFocusPhotoId] = useState<string | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
 
   const pack = getRulePack(rulePackId);
@@ -74,9 +86,10 @@ export default function InspectionApp() {
     try {
       const prepared = await Promise.all([...files].filter((f) => f.type.startsWith("image/")).map(async (file) => {
         const p = await preparePhoto(file);
-        return { id: nextKey("p"), room: file.name.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " "), ...p };
+        return { id: nextKey("p"), room: roomFromFileName(file.name), ...p };
       }));
       setPhotos((prev) => [...prev, ...prepared].slice(0, 12));
+      setFocusPhotoId(prepared.find((p) => !p.room)?.id ?? null);
     } finally {
       setLoadingPhotos(false);
     }
@@ -126,17 +139,18 @@ export default function InspectionApp() {
           tenancyStart,
           moveOutDate: moveOutDate || new Date().toISOString().slice(0, 10), // leer = heute (erst im Handler, nicht im Prerender)
           components: components
-            .filter((c) => c.installedYear)
+            .filter((c) => c.installedYear.length === 4) // unvollständige Jahre ignorieren statt Request scheitern lassen
             .map((c) => ({ component: c.component, installedYear: Number(c.installedYear), ...(c.variant ? { variant: c.variant } : {}) })),
-          photos: photos.map((p) => ({ id: p.id, room: p.room, kind: "move_out", imageBase64: p.dataUrl })),
+          photos: photos.map((p, i) => ({ id: p.id, room: p.room.trim().slice(0, 60) || `Photo ${i + 1}`, kind: "move_out", imageBase64: p.dataUrl })),
           landlordClaims: claims
-            .filter((c) => c.description.trim() && c.amount !== "")
-            .map((c) => ({ id: c.id, description: c.description.trim(), amount: Number(c.amount) })),
+            .filter((c) => c.description.trim() && c.amount !== "" && Number.isFinite(Number(c.amount)))
+            .map((c) => ({ id: c.id, description: c.description.trim().slice(0, 200), amount: Number(c.amount) })),
         }),
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        throw new Error(body.error ?? `Request failed (${res.status})`);
+        const details = body.details ? Object.entries(body.details as Record<string, string[]>).map(([k, v]) => `${k}: ${v.join(", ")}`).join("; ") : "";
+        throw new Error(`${body.error ?? `Request failed (${res.status})`}${details ? ` — ${details}` : ""}`);
       }
       let finished = false;
       await readEventStream<InspectionEvent>(res, (ev) => {
@@ -163,7 +177,8 @@ export default function InspectionApp() {
     }
   }
 
-  const canRun = photos.length > 0 && !loadingPhotos && phase !== "running";
+  const unnamed = photos.filter((p) => !p.room.trim()).length;
+  const canRun = photos.length > 0 && unnamed === 0 && tenancyStart !== "" && !loadingPhotos && phase !== "running";
   const showResults = phase !== "setup";
 
   return (
@@ -218,6 +233,11 @@ export default function InspectionApp() {
               <input ref={fileInput} type="file" accept="image/jpeg,image/png,image/webp" multiple hidden onChange={(e) => e.target.files && addFiles(e.target.files)} />
             </div>
             {photos.length > 0 && (
+              <>
+              <datalist id="room-suggestions">
+                {ROOM_SUGGESTIONS.map((r) => <option key={r} value={r} />)}
+              </datalist>
+              {unnamed > 0 && <p className="mt-4 text-xs text-[#8a6a08]">Name {unnamed === 1 ? "the highlighted photo" : `the ${unnamed} highlighted photos`} — the room ends up in the report and the letter.</p>}
               <ul className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
                 {photos.map((p) => (
                   <li key={p.id} className="overflow-hidden rounded-xl bg-white ring-1 ring-black/5">
@@ -227,7 +247,11 @@ export default function InspectionApp() {
                       <input
                         value={p.room}
                         onChange={(e) => setPhotos((prev) => prev.map((x) => (x.id === p.id ? { ...x, room: e.target.value } : x)))}
-                        className="min-w-0 flex-1 rounded-md px-1 py-0.5 text-xs text-[#2c3a30] outline-none focus:bg-[#f4f6f1]"
+                        placeholder="Which room?"
+                        list="room-suggestions"
+                        autoFocus={p.id === focusPhotoId}
+                        maxLength={60}
+                        className={`min-w-0 flex-1 rounded-md px-1.5 py-1 text-xs text-[#2c3a30] outline-none focus:bg-[#f4f6f1] ${p.room.trim() ? "" : "bg-[#fbf3d9] ring-1 ring-[#c99a12]/60 placeholder:text-[#8a6a08]"}`}
                         aria-label="Room"
                       />
                       <button type="button" onClick={() => setPhotos((prev) => prev.filter((x) => x.id !== p.id))} className="px-1 text-xs text-[#9aa39b] hover:text-[#b13d0c]" aria-label={`Remove ${p.room}`}>✕</button>
@@ -235,6 +259,7 @@ export default function InspectionApp() {
                   </li>
                 ))}
               </ul>
+              </>
             )}
           </section>
 
