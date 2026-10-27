@@ -1,69 +1,54 @@
-# AI Interior Designer — Meta Global AI Developer Hackathon
+# Fair Deposit — Move-out Inspection Agent (Meta Global AI Developer Hackathon)
 
-AI-gestützter Interior Designer: Nutzer laden ein Foto ihres Zimmers hoch, wählen Stil und Budget (CHF) — Meta-Modelle erstellen ein Redesign-Visual und eine Einkaufsliste mit **realen, kaufbaren Produkten** inkl. Preisen, Bildern und Händlerlinks.
+> *"Every renter dreads move-out day. Fair Deposit is an AI agent built on Meta's models: it inspects your photos, separates normal wear from real damage, proves every finding with a SAM 3.1 mask, and calculates what you actually owe under your local depreciation rules — then drafts your reply to the landlord."*
+
+**Status:** in development during the hackathon (Oct 26 – Nov 4, 2026). The project pivoted on Oct 27 from an AI interior designer; the code in `src/` is being rebuilt step by step (see [docs/PLAN.md](docs/PLAN.md)). Working title, name not final.
+
+*Not legal advice.* The app gives an estimate with cited sources; generic rule packs are explicitly marked as estimates.
+
+## How it works
+
+1. Upload move-out photos (overview + close-ups), optionally move-in photos and the landlord's claimed amounts.
+2. A **Muse Spark agent** inspects each photo, zooms into suspicious regions, and classifies every finding as *normal wear* or *damage*.
+3. **SAM 3.1** produces a pixel-accurate mask as evidence for each finding — the agent picks a box or concept prompt depending on the damage type.
+4. **Code, not the model, does the math:** residual value of each component from a cited lifespan table → tenant's fair share per claimed item.
+5. The agent verifies its own report (evidence present, rules cited, totals consistent, second-pass check of each damage finding) and drafts a reply letter.
 
 ## Stack
 
-| Layer | Technologie |
+| Layer | Technology |
 |---|---|
-| Frontend + Backend | Next.js (App Router, TypeScript, Tailwind) — ein Service, API Routes |
-| Raum-Analyse (Vision) | `muse-spark-1.3` (Meta Model API) |
-| Raum-Redesign (Bild-Bearbeitung) | `muse-image-1.0` (Meta Model API, image-to-image) |
-| Produktsuche | Structured Output über einen echten Produktkatalog (IKEA-Datensatz, lokal als JSON) |
-| Produktdaten | [jeffreyszhou/ikea-us-products-2025](https://huggingface.co/datasets/jeffreyszhou/ikea-us-products-2025) (~30'000 echte IKEA-Produkte) |
-| Möbel-Auswahl | SAM 3.1 — Möbelmasken im Foto antippen und Behalten/Ersetzen festlegen |
+| Frontend + Backend | Next.js (App Router, TypeScript, Tailwind) — one service, API routes, SSE streaming of agent steps |
+| Agent, inspection, verification, letter | `muse-spark-1.3` (Meta Model API, tool calling + vision) |
+| Evidence masks | `sam-3.1` (Meta Model API, box and concept prompts) |
+| Optional | `muse-spark-open-1026` (open weights via Baseten/Modal) |
+| Test/demo images | `muse-image-1.0` generates move-in/move-out image pairs with known damage (development only) |
+| Rules | Rule packs as JSON (`data/rules/`), e.g. Swiss joint lifespan table (cited) + generic depreciation (estimate) |
 
 ## Quickstart
 
 ```bash
-# 1. Dependencies installieren
 npm install
-
-# 2. Meta Model API Key setzen (siehe .env.example)
-cp .env.example .env.local
-
-# 3. Produktkatalog vorbereiten (einmalig, siehe data/README.md)
-python scripts/prepare_catalog.py
-
-# 4. Dev-Server starten
-npm run dev
-# → http://localhost:3000
+cp .env.example .env    # add your Meta Model API key
+npm run dev             # → http://localhost:3000
 ```
 
-## Projektstruktur
+Feasibility spike (damage detection + masks on your own images):
 
-```
-├── src/
-│   ├── app/                  # Next.js App Router (Pages + API Routes)
-│   │   ├── page.tsx          # Haupt-UI: Upload, Stil/Budget-Auswahl, Ergebnis
-│   │   └── api/              # Backend-Endpunkte (siehe docs/ARCHITECTURE.md)
-│   ├── components/           # UI-Komponenten (Upload, Produktkarte, Budgetanzeige)
-│   └── lib/                  # Kernlogik
-│       ├── meta-client.ts    # Meta Model API Client (OpenAI-SDK-kompatibel)
-│       ├── room-analysis.ts  # Vision-Analyse des Raumfotos
-│       ├── redesign.ts       # muse-image Bild-Bearbeitung
-│       ├── catalog.ts        # Produktkatalog-Zugriff + Filter
-│       └── budget.ts         # Budget-Berechnung / CHF-Konversion
-├── data/
-│   ├── raw/                  # Heruntergeladener IKEA-Datensatz (gitignored)
-│   └── catalog.json          # Aufbereiteter Katalog (gitignored, generiert)
-├── scripts/
-│   └── prepare_catalog.py    # Datensatz → Katalog (Filter, Preis-Normalisierung)
-└── docs/
-    ├── ARCHITECTURE.md       # Architektur, Datenmodelle, Schnittstellen
-    ├── PLAN.md               # 10-Tage-Umsetzungsplan + Demo-Checkliste
-    ├── DATA-SOURCES.md       # Produktdaten: Quelle, Lizenz, Währung
-    └── OPEN-QUESTIONS.md     # Annahmen und offene Fragen
+```bash
+node scripts/spike/detect-damage.mjs <image-dir> <out-dir>
 ```
 
-## Dokumentation
+## Documentation
 
-- **[docs/POSITIONING.md](docs/POSITIONING.md)** — Wettbewerbslandschaft, Differenzierungs-Wedges, Pitch
-- **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** — Architektur (Agent-Loop), Datenmodelle, API-Schnittstellen
-- **[docs/PLAN.md](docs/PLAN.md)** — 10-Tage-Plan (26. Okt – 4. Nov), Meilensteine
-- **[docs/DATA-SOURCES.md](docs/DATA-SOURCES.md)** — Woher Produktdaten/Preise kommen
-- **[docs/OPEN-QUESTIONS.md](docs/OPEN-QUESTIONS.md)** — Technische Annahmen, offene Fragen
+- **[docs/POSITIONING.md](docs/POSITIONING.md)** — problem, competition, differentiation, prize strategy, spike results
+- **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** — agent loop, data models, API, code migration plan
+- **[docs/PLAN.md](docs/PLAN.md)** — milestones until submission, demo checklist
+- **[docs/DATA-SOURCES.md](docs/DATA-SOURCES.md)** — rule pack sources, test image licenses, privacy
+- **[docs/OPEN-QUESTIONS.md](docs/OPEN-QUESTIONS.md)** — assumptions and open questions
 
-## Wichtige Rahmenbedingung
+(Internal docs are written in German.)
 
-Es dürfen **keine Produkte, Preise oder Verfügbarkeiten erfunden werden** — alle Produktdaten stammen aus dem IKEA-Datensatz mit echten Produkt-URLs. Preisangaben sind USD (Stand Juli 2025); CHF-Umrechnung siehe docs/DATA-SOURCES.md.
+## Built during the hackathon
+
+All code in this repository was written during the event (Oct 26 – Nov 4, 2026). Git history documents the progress, including the pivot.

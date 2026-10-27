@@ -1,15 +1,7 @@
 # data/
 
-- `raw/` — heruntergeladener IKEA-Datensatz (gitignored). Download siehe unten.
-- `catalog.json` — generierter, aufbereiteter Katalog (gitignored, von `scripts/prepare_catalog.py` erzeugt).
-- `test-room.png` — synthetisches Testraumfoto für den lokalen End-to-End-Durchlauf.
+- `rules/` — Rule Packs mit Lebensdauern pro Bauteil (ab Tag 3), siehe **docs/DATA-SOURCES.md**.
+- `test-room.png` — synthetisches Testraumfoto (Ausgangsbild für `scripts/spike/generate-damage.mjs`).
+- `raw/`, `catalog.json` — Altlasten aus der Interior-Phase (gitignored), werden an Tag 3 entfernt.
 
-## IKEA-Datensatz herunterladen (einmalig)
-
-```bash
-pip install "huggingface_hub[cli]"
-hf download jeffreyszhou/ikea-us-products-2025 products-us.jsonl \
-  --repo-type dataset --local-dir data/raw
-```
-
-Details zur Quelle, Lizenz-Hinweis und Währungs-Handling: **docs/DATA-SOURCES.md**.
+Quellen, Lizenzen und Datenschutz: **docs/DATA-SOURCES.md**.
