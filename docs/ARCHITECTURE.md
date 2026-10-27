@@ -1,184 +1,196 @@
-# Architektur — AI Interior Designer
+# Architektur — Fair Deposit (Move-out Inspection Agent)
 
-## Stack-Entscheidung
+Produktidee und Wettbewerb: siehe [POSITIONING.md](POSITIONING.md). Pivot vom AI Interior Designer am 27. Okt; Stack und Agent-Gerüst bleiben, die Domäne wechselt.
 
-**Ein einziges Next.js-Full-Stack-Projekt** (App Router + API Routes, TypeScript) statt Frontend + separates Python-Backend.
+## Stack-Entscheidung (unverändert)
 
-Begründung:
-- Ein Service = ein Deployment (Vercel-ready), keine CORS-/Proxy-Themen — wichtig für einen funktionierenden Live-Demo-Tag.
-- Meta Model API ist **OpenAI-SDK-kompatibel** (`base_url: https://api.meta.ai/v1`) — offizieller TypeScript-SDK-Support, ein Sprach-Stack reicht.
-- 10-Tage-Fenster: jede Schnittstelle weniger ist ein Tag gewonnen.
+**Ein Next.js-Full-Stack-Projekt** (App Router + API Routes, TypeScript):
+- Ein Service = ein Deployment (Vercel-ready), keine CORS-/Proxy-Themen.
+- Meta Model API ist **OpenAI-SDK-kompatibel** (`base_url: https://api.meta.ai/v1`), SAM-Parsing über `@meta-sam/parser`.
+- Kein Python-Backend nötig (der IKEA-Katalog-Schritt fällt weg).
 
-Alternative (verworfen): Streamlit — am schnellsten, aber die Demo-/Produktqualität von Next.js zählt 25% der Bewertung; Vercel-Hosting ist kostenlos.
+## User Flow
 
-## Kern-Architektur: Agent-Loop statt starrer Pipeline
+1. **Setup:** Land/Rule Pack wählen (Schweiz = vollständig zitiert, "Generic" = Schätzung), Mietbeginn, optional Alter einzelner Bauteile (z.B. "Boden 2015 verlegt", "zuletzt gestrichen 2021").
+2. **Fotos:** pro Raum Übersicht + beliebige Nahaufnahmen. Optional: Einzugsfotos/-protokoll zum Vergleich.
+3. **Optional: Forderung des Vermieters** als Positionen erfassen ("Parkett schleifen: 1'200", "Wand streichen: 600").
+4. **Agent läuft live** (SSE): Inspektion → Zoom → Masken → Regeln → Fair-Share-Rechnung → Selbstprüfung.
+5. **Ergebnis:** Befundliste mit Masken-Overlays, *wear vs. damage*, Anteil Mieter/Vermieter pro Position mit Regelzitat, Summe vs. Forderung, **Antwortentwurf an den Vermieter**, Export (Markdown/PDF).
 
-**Wettbewerbskern** (siehe docs/POSITIONING.md): `muse-spark` läuft als **Agent mit Tools** — nicht als drei hintereinander geschaltete Calls. Der Agent entscheidet selbst, in welcher Reihenfolge er Werkzeuge braucht, und **iteriert**, bis Budget und Bild-Listen-Konsistenz stimmen.
+## Kern-Architektur: Verifiable Agent-Loop
 
 ```
-┌──────────┐   Upload Foto, Stil,    ┌──────────────────────────────────────────┐
-│ Browser  │   Budget (CHF),         │ POST /api/design  (SSE-Streaming)        │
-│ (page)   │   Keep/Replace-Masken   │                                          │
-└──────────┘ ─────────────────────▶ │ muse-spark AGENT-LOOP:                   │
-                                    │                                          │
-                                    │  tool analyze_room        (Vision, JSON) │
-                                    │  tool segment_furniture   (SAM 3.1)      │
-                                    │  tool plan_budget         (programmatisch)│
-                                    │  tool search_catalog      (echter Katalog)│
-                                    │  tool edit_room_image     (muse-image)   │
-                                    │  tool verify              (Checks)       │
-                                    │                                          │
-                                    │  → iteriert bis Budget ≤ und Bild ↔ Liste│
-                                    └────────────────┬─────────────────────────┘
-                                                     │ DesignResult (Stream)
-                                    ┌────────────────▼─────────────────────────┐
-                                    │ UI: Before/After + Einkaufsliste         │
-                                    │ (Bild, Name, Preis CHF, IKEA-Link)       │
-                                    └──────────────────────────────────────────┘
+┌──────────┐  Fotos, Rule Pack,     ┌────────────────────────────────────────────┐
+│ Browser  │  Mietbeginn, Bauteil-  │ POST /api/inspect  (SSE-Streaming)         │
+│          │  alter, Forderungen    │                                            │
+└──────────┘ ─────────────────────▶ │ muse-spark AGENT-LOOP (max. N Iterationen):│
+                                    │                                            │
+                                    │  inspect_photo    Spark Vision → Befunde   │
+                                    │  zoom_region      Kachel/Crop → re-inspect │
+                                    │  segment_finding  SAM 3.1 (Box | Konzept)  │
+                                    │  compare_move_in  Spark, 2 Bilder (optional)│
+                                    │  lookup_rule      Rule Pack (Code)         │
+                                    │  compute_share    Restwert-Rechnung (Code) │
+                                    │  verify_report    Code-Checks + Vision-    │
+                                    │                   Gegenprüfung der Befunde │
+                                    │  draft_letter     Spark Text               │
+                                    │  finish                                    │
+                                    └──────────────────┬─────────────────────────┘
+                                                       │ InspectionReport (Stream)
+                                    ┌──────────────────▼─────────────────────────┐
+                                    │ UI: Fotos + Masken, Befundliste, Fair-Share│
+                                    │ Tabelle, Summe vs. Forderung, Brief-Entwurf│
+                                    └────────────────────────────────────────────┘
 ```
 
-**Warum Agent statt Pipeline:** Ein starrer Flow "Analyze → Redesign → Products" produziert ein Bild, dessen Möbel nicht zur Liste passen, und eine Liste, die das Budget sprengen kann. Der Agent-Loop behebt beides selbst: Budget überschritten → er wählt günstigere Alternativen und plant neu; Bild passt nicht zu gewähltem Produkt → er re-edited mit Referenzbildern. Das ist der Kern von "beyond a basic integration" (25% Meta-Tooling) und zielt auf den Bonus-Preis "Best Agentic Use-Case".
+### Prinzipien
 
-**Anti-Halluzinierung (Kernprinzip, unverändert):** Das Modell wählt nur aus **vorhandenen Katalog-Einträgen** (per ID referenziert). Preise, Namen, Links kommen **ausschliesslich aus der Datenbank**, nie aus dem Modell. Budget-Split, Summen und Budget-Checks laufen programmatisch in Tools, nicht im Modell.
-
-**Vision-basierte Verifikation (der "überraschende" Moment):** Die Bild-Listen-Konsistenz prüft muse-spark per Vision — er sieht das *generierte* Redesign-Bild und bestätigt, dass die Einkaufslisten-Produkte tatsächlich sichtbar sind. Schlägt der Check fehl, re-edited der Agent mit schärferem Prompt/Referenzbildern. Das Modell wird also als **Verifikator**, nicht nur als Generator benutzt — das schliesst den Loop technisch und ist die stärkste Antwort auf "Did they surface capabilities that surprised even us?".
+1. **Das Modell sieht und urteilt, Code rechnet.** Spark liefert Befunde (Typ, Fläche, Schwere, Box, wear/damage). Lebensdauern kommen aus dem Rule Pack, Beträge aus der Forderung des Vermieters bzw. Nutzereingabe, Summen und Anteile aus `compute_share`. Kein Betrag stammt aus dem Modell.
+2. **Jeder Befund hat einen Beleg.** Ein Befund ohne plausible SAM-Maske (oder bestätigte Box) wird nicht in den Report übernommen bzw. als "unbestätigt" markiert.
+3. **Selbstprüfung statt Vertrauen.** `verify_report` prüft: Maske liegt in/nahe Sparks Box, jede Position hat Regel + Quelle, Summe = Code-Ergebnis, und ein zweiter Spark-Pass bestätigt jeden *damage*-Befund auf dem Crop ("Ist das wirklich ein Schaden, oder Reflexion/Schatten/Möbel?"). Fehler → Agent iteriert (anderer SAM-Prompt, Zoom, Befund verwerfen).
+4. **Strategie-Wahl ist Agenten-Arbeit.** Aus dem Spike: Box-Prompt für flächige Schäden (Fleck, Wasserschaden, Riss, abblätternde Farbe), Konzept-Prompt (Sparks Label) für dünne/verstreute (Kratzer, Kritzeleien). Fallback auf die jeweils andere Strategie.
+5. **Not legal advice.** UI und Report formulieren als Einschätzung mit Quellen; generisches Paket ist klar als Schätzung markiert.
 
 ## Meta Model API Integration
 
-OpenAI-SDK mit umgebogenem Base URL:
-
-```typescript
-import OpenAI from "openai";
-
-const client = new OpenAI({
-  baseURL: process.env.MODEL_API_BASE_URL ?? "https://api.meta.ai/v1",
-  apiKey: process.env.MODEL_API_KEY,
-});
-```
-
 | Zweck | Modell | Modus | Anmerkung |
 |---|---|---|---|
-| Agent-Loop (Planung, Produkt-Auswahl, Verifikation) | `muse-spark-1.3` | Responses API mit **Tool Calling** + Structured Output | 1M Kontext; Vision via `input_image` (Base64 data URL) |
-| Raum-Redesign | `muse-image-1.0` | `/v1/images/edits` (image-to-image) | Originalfoto + **Referenzbilder der gewählten Produkte** → Edit mit genau diesen Stücken |
-| Möbel-Segmentierung | SAM 3.1 | API | Masken für "Behalten / Ersetzen"; steuern den Bild-Edit |
-| Optional: Sprachinput | Muse Voice Transcribe | API | "Die Couch bleibt, der Tisch raus" — nur falls Zeit |
+| Agent-Loop, Inspektion, Gegenprüfung, Brief | `muse-spark-1.3` | Chat Completions + **Tool Calling**, Vision via `image_url` (data URL) | Reasoning-Modell: `max_tokens` ≥ 3000; `tool_choice` nur `"auto"` |
+| Beweis-Masken | `sam-3.1` | Responses API, Stream; Text-Prompt **oder** Box-Prompt via `buildObjectPrompt` | Ein Konzept pro Call; Maske = Raster innerhalb `bounds` |
+| Optional: Open-Weight-Bonus | `meta-models/muse-spark-open-1026` | Baseten/Modal (OpenAI-kompatibel) | Inspektions-Pass austauschbar über Env-Flag |
+| Optional: Rundgang-Video | `sam-3.1` | `parseVideoStream` (Parser unterstützt Video) | Stretch Goal, API-Support noch ungeprüft |
+| Entwicklung/Demo-Daten | `muse-image-1.0` | `/v1/images/edits` | Erzeugt Einzug/Auszug-Bildpaare für Tests und Demo — nicht Teil des Produkts; im Video als synthetisch kennzeichnen |
 
-Kosten (~$150 Credits, Standard-Mode): Spark $1.25/M input, $4.25/M output Tokens; Muse Image $0.01/Bild; SAM 3.1 $2.50/1'000 Bilder. Ein kompletter Agent-Durchlauf liegt im Rappen-/Cent-Bereich.
+Kosten: Spark $1.25/M input, $4.25/M output; SAM 3.1 $2.50/1'000 Bilder; Muse Image $0.01/Bild. Eine Inspektion mit ~10 Fotos liegt im Cent-Bereich.
 
-### Erkenntnisse aus dem ersten Test-Call (26. Okt, mit dem echten Key verifiziert)
+### Erkenntnisse aus den Test-Calls
 
-1. **Modell-IDs bestätigt** via `/v1/models` (kostenlos): `muse-spark-1.3`, `muse-image-1.0`, `sam-3.1`, `muse-wonder-1.0`, `muse-voice-transcribe-1.0`.
-2. **muse-spark ist ein Reasoning-Modell:** Bei `max_tokens: 200` gingen 198 Tokens für Reasoning drauf, bevor Output kam (leerer Content). Konsequenz: grosszügige `max_tokens` (≥ 1500) pro Agent-Call setzen.
-3. **`tool_choice` unterstützt nur `"auto"`** — `"required"` und benannte Functions geben HTTP 400. Der Agent-Prompt muss die Reihenfolge steuern, nicht `tool_choice`.
-4. **Reasoning-Overhead:** ~550 Reasoning-Tokens pro Call zusätzlich — bei ~8 Agent-Iterationen pro Design-Run unkritisch (< $0.05/Run).
-5. Budget-Diskiplin: Caching von Ergebnissen, Iterations-Cap, Vision-Checks über Env-Flag abschaltbar.
+1. Modell-IDs via `/v1/models`: `muse-spark-1.3`, `muse-image-1.0`, `sam-3.1`, `muse-wonder-1.0`, `muse-voice-transcribe-1.0`.
+2. Spark braucht grosszügige `max_tokens` (Reasoning frisst sonst den Output).
+3. `tool_choice` nur `"auto"` — Reihenfolge über den System-Prompt steuern.
+4. Spike 27. Okt (Details in POSITIONING.md): Spark erkennt und klassifiziert Schäden zuverlässig ohne Fehlalarm im Kontrollbild; SAM-Masken präzise bei passender Prompt-Strategie; kleine Schäden auf Raumübersichten brauchen Zoom/Nahaufnahmen.
+5. Muse Image hat einen Content-Filter (z.B. "red wine stain" abgelehnt).
 
 ## Datenmodelle (TypeScript)
 
 ```typescript
-// 1. Request des Nutzers
-interface DesignRequest {
-  image: File;                 // Raumfoto
-  style: string;               // z.B. "skandinavisch", "modern", "boho"
-  budgetChf: number;           // Budget in CHF
-  keep?: string[];             // zu behaltende Objekte (SAM-Masken/Labels)
-  replace?: string[];          // zu ersetzende Objekte
+// 1. Request
+interface InspectionRequest {
+  rulePack: "ch" | "generic";
+  tenancyStart: string;                  // ISO-Datum
+  moveOutDate: string;
+  components?: { component: ComponentType; installedYear: number }[]; // optional bekanntes Alter
+  photos: { id: string; room: string; kind: "move_out" | "move_in"; imageBase64: string }[];
+  landlordClaims?: { id: string; description: string; amount: number; currency: string }[];
 }
 
-// 2. Ergebnis der Vision-Analyse (Structured Output, Schema erzwungen)
-interface RoomAnalysis {
-  roomType: string;            // "living_room" (Prototyp-Fokus)
-  dimensionsEstimate: string;  // grobe Einschätzung, klar als Schätzung markiert
-  currentFurniture: string[];  // erkannte Möbelstücke
-  colorPalette: string[];      // Hex-Codes
-  lighting: string;            // "hell", "dimmig", ...
-  styleNotes: string;          // bestehende Merkmale, die erhalten bleiben sollen
-}
+type ComponentType =
+  | "wall_paint" | "wallpaper" | "parquet" | "laminate" | "carpet" | "tiles"
+  | "kitchen_counter" | "door" | "window" | "bathroom_fixture" | "other";
 
-// 3. Katalog-Produkt (aus data/catalog.json — Quelle: IKEA-Datensatz)
-interface Product {
-  id: string;                  // IKEA product_id
-  title: string;               // echter Produktname
-  category: string;            // normalisierte Kategorie (sofa, table, lamp, ...)
-  priceUsd: number;
-  priceChf: number;            // mit fixem Kurs konvertiert (siehe DATA-SOURCES.md)
-  currency: "CHF";
-  imageUrl: string;            // echtes Produktbild (als Muse-Image-Referenz nutzbar)
-  sourceUrl: string;           // echte IKEA-Produktseite
-  dimensions?: string;
-}
+type Box = { left: number; top: number; right: number; bottom: number }; // Pixel, right/bottom halboffen
 
-// 4. Budget-Plan (programmatisch, vor der Produktsuche)
-interface BudgetPlan {
-  totalChf: number;
-  allocation: { category: string; maxChf: number }[];  // z.B. sofa 45%, lamp 10% ...
-}
-
-// 5. Ergebnis der Produkt-Auswahl
-interface ShoppingList {
-  items: (Product & { reason: string })[];  // reason: kurze Begründung des Agenten
-  totalChf: number;                          // programmatisch berechnet
-  budgetChf: number;
-  withinBudget: boolean;
-}
-
-// 6. Verifikation des Agenten (letzte Tool-Instanz vor dem Output)
-interface DesignVerification {
-  imageListConsistent: boolean;   // Vision-Check: muse-spark sieht das generierte Bild
-                                  // und bestätigt, dass die Listen-Produkte sichtbar sind
-  withinBudget: boolean;
-  keepRespected: boolean;         // Behalten-Markierungen umgesetzt
-  issues: string[];               // offene Probleme → Agent iteriert
-}
-
-// 7. DesignSession (Client-State / Persistenz-Kandidat)
-interface DesignSession {
+// 2. Befund (Spark Vision, Schema per zod validiert)
+interface Finding {
   id: string;
-  request: DesignRequest;
-  analysis: RoomAnalysis;
-  budgetPlan: BudgetPlan;
-  shoppingList: ShoppingList;
-  redesignImageUrl: string;
-  verification: DesignVerification;
-  agentSteps: { tool: string; summary: string }[];   // für UI-Transparenz
-  createdAt: string;
+  photoId: string;
+  label: string;                         // "hole in wall" (auch SAM-Konzept-Prompt)
+  category: "hole" | "scratch" | "stain" | "crack" | "marks" | "water_damage" | "mold" | "peeling_paint" | "other";
+  component: ComponentType;
+  classification: "normal_wear" | "damage";
+  severity: "minor" | "moderate" | "severe";
+  description: string;
+  box: Box;
+  confidence: number;
+  evidence?: { maskPath: string; bounds: Box; strategy: "box" | "concept"; samConfidence: number | null };
+  preExisting?: { value: boolean; reason: string };   // aus compare_move_in
+  status: "confirmed" | "unconfirmed" | "rejected";   // nach verify_report
+}
+
+// 3. Rule Pack (data/rules/*.json)
+interface RulePack {
+  id: "ch" | "generic";
+  name: string;
+  source: { title: string; url: string; retrieved: string } | null; // generic: null → Schätzung
+  isEstimate: boolean;
+  lifespans: { component: ComponentType; years: number; note?: string }[];
+  normalWearExamples: string[];          // für den Inspektions-Prompt
+}
+
+// 4. Fair-Share-Position (compute_share, reiner Code)
+interface ShareLine {
+  claimId: string | null;                // null = Befund ohne Forderung
+  findingIds: string[];
+  component: ComponentType;
+  claimedAmount: number | null;
+  ageYears: number;
+  lifespanYears: number;
+  residualShare: number;                 // max(0, 1 - age/lifespan)
+  tenantPays: number;                    // damage: claimed × residualShare; normal_wear: 0
+  rule: string;                          // menschenlesbare Begründung inkl. Quelle
+}
+
+// 5. Report
+interface InspectionReport {
+  findings: Finding[];
+  lines: ShareLine[];
+  totals: { claimed: number; tenantPays: number; currency: string };
+  verification: { passed: boolean; issues: string[] };
+  letterDraft: string;
+  agentSteps: { tool: string; summary: string }[];
+  disclaimer: string;
 }
 ```
 
 ## API-Schnittstellen
 
-| Route | Methode | Input | Output | Modell-Aufruf |
+| Route | Methode | Input | Output | Modelle |
 |---|---|---|---|---|
-| `/api/design` | POST | multipart: image + style + budgetChf (+ keep/replace) | SSE-Stream der Agent-Steps → `DesignSession` | muse-spark Agent-Loop (ruft SAM + muse-image als Tools) |
-| `/api/segment` | POST | multipart: image | Masken/Labels vorhandener Möbel | SAM 3.1 |
-| `/api/session` | POST/GET | — | `DesignSession` speichern/laden | — (optional, Phase 3) |
+| `/api/inspect` | POST | JSON (`InspectionRequest`, zod) | SSE: Agent-Steps, Befunde inkrementell, finaler `InspectionReport` | Spark-Agent (ruft SAM als Tool) |
+| `/api/segment` | POST | Bild + Box **oder** Konzept-Text | Masken + Boxen | SAM 3.1 (für manuelles Nachmarkieren in der UI, optional) |
 
-Alle Routen validieren Inputs (zod) und kapseln API-Keys serverseitig. SSE-Streaming, damit die UI die Agent-Schritte live zeigt — Agent-Transparenz ist Demo-Futter (25%) und Technical-Depth-Beweis.
+Alle Routen validieren Inputs (zod), kapseln API-Keys serverseitig, begrenzen Bildgrösse/-anzahl.
 
-## Projektmodul-Verantwortlichkeiten (`src/lib/`)
+## Code-Umbau (Skizze)
 
-- `meta-client.ts` — Singleton OpenAI-Client, Retry, Timeout
-- `agent/design-agent.ts` — Tool-Definitionen + Agent-Loop (max. N Iterationen)
-- `agent/tools/analyze-room.ts` — Vision-Analyse (Structured Output)
-- `agent/tools/segment.ts` — SAM 3.1-Aufruf, Masken → Behalten/Ersetzen
-- `agent/tools/catalog-search.ts` — Katalog-Filter per Kategorie/Budget, ID-Validierung
-- `agent/tools/edit-image.ts` — muse-image image-to-image mit Produkt-Referenzbildern
-- `agent/tools/verify.ts` — Konsistenz-/Budget-Checks (reiner Code, kein LLM)
-- `catalog.ts` — Katalog laden, nach Kategorie/Preis filtern, ID-Lookup
-- `budget.ts` — Budget-Split-Heuristik, USD→CHF, Summen
+Ausgangsstand: Interior-Designer-Code (Agent-Loop, SSE, SAM, UI). Etwa die Hälfte ist direkt wiederverwendbar.
+
+| Datei | Aktion | Neu / Anmerkung |
+|---|---|---|
+| `src/lib/meta-client.ts` | **behalten** | + optionaler zweiter Client für Muse Spark Open (Env) |
+| `src/lib/agent/design-agent.ts` | **umbauen** → `inspection-agent.ts` | Loop, Iterations-Cap, SSE-Events und Tool-Dispatch bleiben; neue Tool-Definitionen + System-Prompt |
+| `src/lib/agent/types.ts` | **neu schreiben** | Schemas aus "Datenmodelle" (zod) |
+| `src/lib/agent/tools/analyze-room.ts` | **umbauen** → `inspect-photo.ts` | Prompt aus `scripts/spike/detect-damage.mjs`, Box 0–1000 → Pixel |
+| `src/lib/agent/tools/segment-furniture.ts` | **umbauen** → `segment-finding.ts` | Box-/Konzept-Strategie, Plausibilitätscheck Maske ↔ Box |
+| `src/lib/agent/tools/verify.ts` | **neu schreiben** → `verify-report.ts` | Code-Checks + Spark-Gegenprüfung auf Crops |
+| — | **neu** `zoom-region.ts` | sharp-Crop (Kacheln oder Box + Rand), re-inspect |
+| — | **neu** `compare-move-in.ts` | Spark mit Einzugs- + Auszugsbild (Tag 5) |
+| — | **neu** `rules.ts` + `data/rules/ch.json`, `generic.json` | Rule Pack laden, Lookup pro Bauteil |
+| — | **neu** `fair-share.ts` + Tests | Restwert-Rechnung, Summen (reiner Code, Unit-Tests) |
+| — | **neu** `draft-letter.ts` | Spark-Text aus Report (nur Fakten aus dem Report) |
+| `src/app/api/design/route.ts` | **umbauen** → `api/inspect/route.ts` | SSE-Gerüst und Validierung bleiben |
+| `src/app/api/segment/route.ts` | **anpassen** | Box/Konzept-Input statt fixer Möbelliste |
+| `src/components/AgentSteps.tsx` | **behalten** | Tool-Namen/Icons anpassen |
+| `src/components/FurnitureSelector.tsx` | **umbauen** → `FindingsViewer.tsx` | Masken-Overlay-Rendering wiederverwenden; Klick auf Befund ↔ Liste |
+| `src/components/DesignApp.tsx` | **umbauen** → `InspectionApp.tsx` | Multi-Foto-Upload, Setup, Forderungen, Ergebnisansicht |
+| `src/components/ShoppingList.tsx` | **ersetzen** → `ShareTable.tsx`, `LetterDraft.tsx` | |
+| `src/lib/catalog.ts`, `budget.ts`, `currency.ts`, `agent/tools/edit-image.ts` | **löschen** | IKEA/Budget-Logik entfällt |
+| `scripts/prepare_catalog.py`, `data/catalog.json`, `data/raw/` | **löschen** | `docs/DATA-SOURCES.md` neu schreiben (Rule-Pack-Quellen, Testbild-Lizenzen) |
+| `scripts/spike/*` | **behalten** | `generate-damage.mjs` wird zum Generator für Demo-Bildpaare |
+
+Reihenfolge: Backend-Tools mit Spike-Code als Vorlage → Agent-Loop → `/api/inspect` per curl testen → UI.
 
 ## Abgrenzung (Anti-Project-Regel)
 
-Der Guide verbietet "Simple Image Analyzers" und "Basic RAG Applications". Dieses Projekt positioniert sich deshalb explizit als **Multi-Step-Agent mit programmatischer Geschäftslogik** — nicht als Bildanalyse-Demo:
-
-1. Autonomer Agent-Loop mit Tool-Calls und Selbst-Iteration (Budget, Konsistenz)
-2. Vision-Analyse mit erzwungenem JSON-Schema (Structured Output)
-3. Constrained Produkt-Auswahl: Modell wählt nur per ID aus einem echten Katalog
-4. Programmatische Budget-Einhaltung und CHF-Konversion in Code
-5. SAM 3.1 + Muse Image + Muse Spark als abgestimmtes System
+Der Guide verbietet u.a. "Simple Image Analyzers" und medizinische Ratschläge. Abgrenzung:
+1. Autonomer Agent mit Tool-Calls, Zoom, Strategie-Wahl und Selbstprüfung
+2. Ergebnis ist eine **erledigte Aufgabe** (Report mit Rechnung + Antwortbrief), keine Bildbeschreibung
+3. Regelwerk und Rechnung in Code, Modell nur für Wahrnehmung und Text
+4. Spark + SAM 3.1 als abgestimmtes System (+ optional Spark Open)
+5. Kein Gesundheits-, Politik- oder Personenbewertungsbezug
 
 ## Erweiterungspunkte (nur wenn Zeit)
 
-- Muse Voice Transcribe (Sprachinput für Behalten/Ersetzen)
-- Design-Session-Historie (localStorage oder SQLite)
-- Weitere Raumtypen (Schlafzimmer, Küche)
+- Rundgang-Video statt Einzelfotos (SAM 3.1 Video-Tracking)
+- Muse Voice Transcribe: Notizen beim Rundgang einsprechen
+- Weitere Rule Packs (z.B. DE, UK) mit zitierten Quellen

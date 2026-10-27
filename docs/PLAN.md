@@ -1,66 +1,88 @@
-# 10-Tage-Plan (26. Okt – 4. Nov 2026)
+# Umsetzungsplan (26. Okt – 4. Nov 2026) — Fair Deposit
 
-Abgabe: **4. Nov, 9:00 PM ET** (= 5. Nov, 03:00 MEZ). Demo-Video **genau 3 Minuten** (vorgeschrieben, primäres Bewertungs-Artefakt) — **vor** dem letzten Tag aufnehmen.
+Abgabe: **4. Nov, 9:00 PM ET** (= 5. Nov, 03:00 MEZ) über die CV-Plattform. Demo-Video **genau 3 Minuten** (primäres Bewertungs-Artefakt, zusammen mit Code und Live-Produkt) — **vor** Tag 7 aufnehmen.
 
-**Harte Regeln:** Repo muss bei der **Submission public** sein — während der Bauphase **privat**, Umschalten auf public **spätestens 3. Nov** (vor Abgabe) · alles Gezeigte ist **New work only** (während des Hackathons gebaut) und klar als eigener Beitrag identifizierbar · Banned: u.a. "Simple Image Analyzers" → unsere Multi-Step-Pipeline muss klar im Vordergrund stehen.
+**Harte Regeln:** Repo bei Submission **public** (während der Bauphase privat, Umschalten **spätestens 3. Nov**) · **New work only**, im Video klar als eigener Beitrag erkennbar · Anti-Projects meiden (u.a. "Simple Image Analyzers", medizinische Ratschläge) → Agent-Loop und erledigte Aufgabe (Report + Brief) stehen im Vordergrund.
 
-Bewertung: Impact 30% · Meta-Tooling 25% · Demo 25% · Technische Tiefe 20%.
+Bewertung (Stage 2, 0–10): Impact 30% · Meta-Tooling 25% · Demo 25% · Technical Depth & Execution 20%. Top 5 pro Track → Finale am 9. Nov (Jury schaut die Videos live).
+
+**Pivot 27. Okt:** vom AI Interior Designer zum Move-out Inspection Agent (Begründung: [POSITIONING.md](POSITIONING.md), Umbau: [ARCHITECTURE.md](ARCHITECTURE.md#code-umbau-skizze)). Solo-Projekt → Scope bewusst klein halten, keine weiteren Pivots.
 
 ## Meilensteine
 
 ### Tag 1 (Mo 26. Okt) — Fundament ✅
-- [x] Projekt-Struktur, Architektur-Doku, Umsetzungsplan
-- [x] ~~$150 Model API Credits beantragen~~ — ✅ **Credits erhalten (26. Okt)**
-- [ ] Meta Model API Key in `.env.local` eintragen, erster Test-Call (Vision + Bild-Edit) mit einem Testraumfoto
-- [x] IKEA-Datensatz herunterladen, `prepare_catalog.py` laufen lassen — ✅ 30'486 Produkte, 12'296 kategorisiert
-- [x] Repo auf GitHub pushen — ✅ privat (https://github.com/Felipe3052/ai-interior-designer), **Umschalten auf public spätestens 3. Nov**
+- [x] Projekt-Struktur, Doku, Plan
+- [x] $150 Model API Credits erhalten, API Key eingerichtet
+- [x] Repo auf GitHub (privat): https://github.com/Felipe3052/ai-interior-designer
+- [x] Agent-Kern (meta-client, Tool-Loop, SSE-Route) — wird im Pivot wiederverwendet
 
-### Tag 2 (Di 27. Okt) — Agent-Kern Backend ✅ (26. Okt abends)
-- [x] `meta-client.ts` (OpenAI-SDK → api.meta.ai/v1), erster Test-Call ✅ (Tool-Calling + Modell-IDs verifiziert)
-- [x] Tool-Definitionen: `search_catalog` (lokaler Filter), `edit_room_image` (muse-image), `verify`, `finish`
-- [x] `design-agent.ts`: Agent-Loop mit Tool Calling, max. 8 Iterationen
-- [x] `verify.ts`: Budget-Checks als reiner Code + **Vision-basierter Bild-Listen-Check** (Env-Flag `ENABLE_VISION_VERIFY`)
-- [x] API-Route `/api/design` mit zod-Validierung + SSE-Streaming der Agent-Steps ✅ (Build verifiziert)
+### Tag 2 (Di 27. Okt) — Pivot + Machbarkeits-Spike ✅
+- [x] Preise/Bewertung aus dem offiziellen Participant Guide ausgewertet
+- [x] Ideenentscheid: Move-out Inspection Agent (global, Schweiz nur als Ursprung)
+- [x] Spike: Spark erkennt Schäden ohne Fehlalarm, SAM-Masken mit Hybrid-Strategie (`scripts/spike/`)
+- [x] POSITIONING, ARCHITECTURE, PLAN umgeschrieben
+- [ ] Interior-Stand als Rückfallpunkt committen
+- [ ] **Baseten-Credits beantragen** (nur 2'000 Plätze, für Open-Weight-Bonus), optional Modal
+- [ ] Repo umbenennen (z.B. `fair-deposit`) — vor dem Public-Schalten
 
-### Tag 3 (Mi 28. Okt) — UI
-- [ ] Upload + Stil/Budget-Auswahl
-- [ ] **Live-Anzeige der Agent-Steps** (SSE) — Transparenz ist Demo-Futter
-- [ ] Before/After-Ansicht mit Ladezuständen
-- [ ] Einkaufsliste: Produktkarten (Bild, Name, Preis, Link), Budgetanzeige
+### Tag 3 (Mi 28. Okt) — Backend: Inspektions-Agent
+- [ ] Altlasten löschen (Katalog, Budget, edit-image, prepare_catalog.py)
+- [ ] `types.ts` (zod), `inspect-photo.ts`, `zoom-region.ts`, `segment-finding.ts` (Hybrid + Plausibilitätscheck)
+- [ ] Rule Packs `ch.json` (Werte **aus der Originalquelle** übernehmen, zitieren) + `generic.json` (als Schätzung markiert)
+- [ ] `fair-share.ts` + Unit-Tests (Restwert, Summen, Randfälle: Alter > Lebensdauer, fehlendes Alter)
+- [ ] `inspection-agent.ts` + `/api/inspect` (SSE), per curl mit Spike-Bildern testen
+- [ ] Workshop "Agents 102: Verifiable Agents" (12:00 ET = 17:00 MEZ) anschauen → Erkenntnisse übernehmen
 
-### Tag 4 (Do 29. Okt) — **End-to-End-Meilenstein (ohne SAM)**
-- [ ] Kompletter Agent-Durchlauf mit 3 verschiedenen Raumfotos funktioniert
-- [ ] Bild ↔ Einkaufsliste konsistent (Agent iteriert, bis verify besteht)
-- [ ] Budget wird eingehalten (Summen-Logik verifiziert)
-- [ ] Fehlerfälle abgefangen (schlechtes Foto, API-Fehler, leere Produktergebnisse)
+### Tag 4 (Do 29. Okt) — UI + End-to-End-Meilenstein
+- [ ] Setup (Rule Pack, Daten, Bauteilalter), Multi-Foto-Upload, Forderungen erfassen
+- [ ] Live-Agent-Steps (AgentSteps wiederverwenden)
+- [ ] FindingsViewer: Fotos mit Masken, Klick Befund ↔ Liste
+- [ ] ShareTable: Position, Alter/Lebensdauer, Anteil, Regelzitat, Summe vs. Forderung
+- [ ] **E2E:** kompletter Durchlauf mit einer Demo-Wohnung funktioniert
 
-### Tag 5 (Fr 30. Okt) — SAM 3.1 + Qualität
-- [ ] SAM 3.1-Segmentierung (`/api/segment`), Behalten/Ersetzen-Auswahl in der UI
-- [ ] Muse-Image-Edit mit SAM-Masken + Produkt-Referenzbildern
-- [ ] Prompt-Tuning: Originaltreue der Raumgeometrie evaluieren (Multi-turn-Refinement nutzen)
-- [ ] Falls Zeit: Muse Voice Transcribe für Sprachinput
+### Tag 5 (Fr 30. Okt) — Verifikation + Agent-Tiefe
+- [ ] `verify-report.ts`: Code-Checks + Spark-Gegenprüfung auf Crops, Agent iteriert bei Fehlern
+- [ ] `compare-move-in.ts`: Einzug-vs-Auszug ("war schon da")
+- [ ] `draft-letter.ts` + Export (Markdown/PDF)
+- [ ] Demo-Datensatz: 2–3 Wohnungen als Einzug/Auszug-Paare (Muse Image, `generate-damage.mjs` erweitern) + echte freie Fotos; Fehlalarm-Rate prüfen
+- [ ] Fehlerfälle: unscharfes Foto, keine Befunde, API-Fehler, zu viele Bilder
 
-### Tag 6 (Sa 31. Okt) — Meta-Tooling-Bonus + Demo-Video
-- [ ] **Demo-Video aufnehmen: genau 3 Minuten** (Momentum: SAM-Auswahl → Agent-Steps live → konsistentes Before/After + Einkaufsliste; vor Tag 7 fertig!)
-- [ ] README + kurzer Essay zur Idee (Impact-Argument: Schweizer Fokus, "Build for Your World")
+### Tag 6 (Sa 31. Okt) — Demo-Video + README
+- [ ] Storyboard (siehe Demo-Checkliste), englisch
+- [ ] **Video aufnehmen: genau 3:00**
+- [ ] README englisch (Problem, Architektur-Diagramm, Meta-Modelle, Setup, "built during the hackathon")
+- [ ] 30–45 s Kurzclip für X vorbereiten
 
-### Tag 7 (So 1. Nov) — Puffer + Polish
-- [ ] UI-Polish, Ladeanimationen, Fehlerzustände
-- [ ] Deployment (Vercel oder eigenes Hosting) → öffentlicher Demo-Link
-- [ ] **Repo von privat auf public umschalten** (`gh repo edit Felipe3052/ai-interior-designer --visibility public --accept-visibility-change-consequences`); Video-Link, Repo-Link und Teamliste fürs Submission-Formular bereitlegen
+### Tag 7 (So 1. Nov) — Puffer + Bonus
+- [ ] UI-Polish, Ladezustände, "Not legal advice"-Hinweis
+- [ ] Deployment (Vercel) → öffentlicher Demo-Link; Demo-Ergebnisse cachen
+- [ ] Optional Open-Weight-Bonus: Inspektions-Pass auf `muse-spark-open-1026` (Baseten/Modal) per Env-Flag
 
-### Tag 8–9 (Mo 2. – Di 3. Nov) — Härtung
-- [ ] Mehrere Durchläufe, Randfälle, Performance (Ladezeiten)
-- [ ] Submission-Formular füllen (Video-Link public, Repo public, alle Beteiligten gelistet)
+### Tag 8–9 (Mo 2. – Di 3. Nov) — Härtung + Public
+- [ ] Mehrere Durchläufe, Randfälle, Ladezeiten
+- [ ] **Repo public schalten** (`gh repo edit … --visibility public --accept-visibility-change-consequences`), Lizenz hinzufügen
+- [ ] Submission-Formular vorbereiten (Video-Link public, Repo-Link, X-Post-Link)
+- [ ] 3. Nov: letzter Tag für Support-Fragen im Discord
 
 ### Tag 10 (Mi 4. Nov) — Abgabe
 - [ ] Frühestmöglich einreichen (Frist 9 PM ET)
-- [ ] Nichts mehr am Code ändern nach Einreichung
+- [ ] Demo-Clip auf X posten (@-Mentions Meta / Cerebral Valley), Link in der Submission
+- [ ] Danach keine Code-Änderungen mehr
 
-## Demo-Checkliste (für das Video)
+## Scope-Regeln (solo)
 
-1. Raumfoto hochladen, Stil + Budget wählen
-2. Before → After Visualisierung
-3. Einkaufsliste mit **echten** Produkten, Preisen, Summe unter Budget
-4. Klick auf einen IKEA-Link → echtes Produkt
-5. Ein Satz zum Impact: "nicht nur Inspiration — umsetzbar"
+- **Muss:** Inspektion + Masken + Fair-Share-Rechnung + Report + Live-Agent-Steps
+- **Soll:** Selbstprüfung, Einzug-vs-Auszug, Antwortbrief
+- **Kann:** Open-Weight-Pass, Video-Rundgang, Voice, weitere Rule Packs
+- Bis Ende Tag 5 kein neues "Kann"-Feature, solange ein "Muss" wackelt.
+
+## Demo-Checkliste (3-Min-Video, englisch)
+
+1. **Hook (0:00–0:15):** *"Landlord claims $1,800 from my deposit. Is that fair?"* — eigene Erfahrung in einem Satz
+2. Setup + Fotos hochladen, Forderung des Vermieters eingeben
+3. **Agent live:** Befunde erscheinen, Agent zoomt, SAM-Masken legen sich über die Schäden, ein Befund wird bei der Selbstprüfung verworfen
+4. **Fair-Share-Tabelle:** wear vs. damage, Restwert-Rechnung mit Regelzitat, *"$240, not $1,800"*
+5. Einzug-vs-Auszug-Moment ("already there at move-in")
+6. Antwortbrief + Export
+7. Architektur-Folie: Spark (Agent + Verifier) + SAM 3.1 (+ Spark Open), "rules are data, math is code"
+8. Hinweis: Demo-Fotos teilweise synthetisch (Muse Image), alles während des Hackathons gebaut

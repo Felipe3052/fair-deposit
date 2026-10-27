@@ -1,110 +1,74 @@
-# Positionierung — Wettbewerbslandschaft und unser Differenzierungs-Wedge
+# Positionierung — Move-out Inspection Agent
 
-Stand: 26. Okt 2026. Recherche über kommerzielle AI-Interior-Design-Tools.
+Stand: 27. Okt 2026. Pivot von "AI Interior Designer" (zu überlaufen, Impact schwach) zu einem Agenten, der **Mieter bei der Wohnungsabgabe** schützt. Entscheidungsgrundlage: offizieller Participant Guide (Bewertung + Preise) und technischer Spike vom 27. Okt (siehe unten).
 
-## Die unbequeme Wahrheit: "AI Raum-Redesign + reale Produkte + Budget" ist marktbewiesen — aber nicht neu
+Arbeitstitel: **Fair Deposit** (Name vor Veröffentlichung auf Kollisionen prüfen).
 
-Kommerzielle Tools, die genau das schon tun (Auswahl):
+## Problem (global)
 
-| Tool | Was es schon macht |
-|---|---|
-| **RoomGen** | Wählt reale Produkte **vor** der Generierung, splittet das Raum-Budget über Kategorien, Generator baut aus den gewählten Produkten, Retailer-Prefs inkl. IKEA |
-| **MeltFlex AI** | Platziert **exakte** Produkte aus 9 Retailern (inkl. IKEA) **im Foto**, mit Preis + Kaufen-Link; hält Wände/Fenster bei |
-| **REimagine Home** | "Real Products Discovery" (Checkout auf Amazon/Shopify), Budget- und ZIP-Inputs, Structure-Lock |
-| **HomeDesigns AI** | "Furniture Finder", Structure-Lock, Shop-the-Render |
-| **Coohom / Feiliu** | Reale Möbel in 3D in wahrem Massstab, shoppable Renders mit Cart |
+Fast jeder Mieter zahlt eine Kaution (Security Deposit, Bond, Mietkaution). Bei der Abgabe entscheidet der Vermieter, was davon zurückkommt — mit Wissens- und Machtvorsprung. Der Kernstreit ist überall derselbe: **Ist das normale Abnutzung oder ein Schaden, für den der Mieter zahlt?** Und selbst bei echtem Schaden darf in vielen Rechtsordnungen nur der **Restwert** des Bauteils verrechnet werden (ein 10 Jahre alter Teppich ist nicht mehr den Neupreis wert). Die meisten Mieter kennen diese Regeln nicht.
 
-Mehrere Review-Sites nennen "shoppable furniture" als **die grösste Entwicklung 2026** in dieser Kategorie.
+Schweizer Bezug nur als Ursprung ("Build for Your World"): *"I built this after my own move-out inspection in Switzerland."* Pitch, UI, Video und README sind **englisch und global**.
 
-**Konsequenz 1:** Unsere Kernidee ist validiert (echte Nachfrage, bezahlende Kunden bei Wettbewerbern) — aber der USP "reale Produkte + Budget" ist im Markt **Stand der Technik**, kein Differenzierer mehr. Im Pitch niemals "first to connect AI redesign with real products" behaupten — falsch, und die Jury kennt den Markt.
+## Wettbewerb — ehrlich
 
-**Konsequenz 2:** Der Hackathon-Sieg kommt nicht aus der Idee, sondern aus drei Wedges, die **keines** der kommerziellen Tools hat:
+Es gibt bereits AI-Inspektions-Tools, z.B. Paraspot, RentSolve, SnapInspect (überwiegend **vermieterseitig**: Property Manager, Abzüge begründen) sowie einzelne Mieter-Apps (Proofr, Witnessed, MoveOutReport: Foto-Dokumentation, Schadens-Scan). Die Leistungsversprechen dort sind Marketing, nicht unabhängig belegt.
 
-## Wedge 1 — Der komplette Loop auf Metas Stack (Meta-Tooling 25% + Technical Depth 20%)
+**Konsequenz:** Nie "first AI move-out tool" behaupten. Unser Unterschied liegt in drei Wedges:
 
-Kein kommerzielles Tool orchestriert **SAM 3.1 + Muse Spark + Muse Image als ein Agent-System**. Unsere Pipeline:
+## Wedge 1 — Tenant-side + "Fair Share"-Rechnung (Impact 30%)
 
-```
-muse-spark (Agent, Tool-Loop)
- ├─ tool: analyze_room        Vision-Analyse (Structured Output)
- ├─ tool: segment_furniture   SAM 3.1 → Masken für Behalten/Ersetzen
- ├─ tool: plan_budget         Budget-Split über Kategorien (programmatisch)
- ├─ tool: search_catalog      echte Produkte per ID aus lokalem Katalog
- ├─ tool: edit_room_image     muse-image-1.0 mit Produkt-Referenzbildern
- └─ tool: verify              Konsistenz-Check (Summe ≤ Budget, Bild ↔ Liste)
-```
+Nicht nur "Schaden gefunden", sondern **"Du schuldest X, nicht Y — und hier ist warum."**
+- Jeder Befund wird als *normal wear* oder *damage* eingestuft.
+- Für Schäden rechnet **Code** (nicht das Modell) den fairen Anteil: Forderung des Vermieters × Restwert-Anteil nach Lebensdauer des Bauteils, mit Quellenangabe der Regel.
+- Ergebnis: ein Abnahme-Report mit Beweisbildern + ein **Antwortentwurf an den Vermieter**. Der Agent erledigt eine Aufgabe, er analysiert nicht nur.
 
-Der Agent entscheidet selbst und iteriert: Budget überschritten → günstigere Alternativen; Bild passt nicht zu gewähltem Produkt → Re-Edit mit schärferem Prompt. Das ist "beyond a basic integration" und zielt direkt auf den Bonus-Preis **Best Agentic Use-Case**.
+Demo-Satz: *"Landlord claims $1,800. The agent shows $240 — with evidence for every line."*
 
-## Wedge 2 — Schweizer Fokus (Impact 30%, Theme "Build for Your World")
+## Wedge 2 — Verifiable Agent auf Metas Stack (Meta-Tooling 25% + Technical Depth 20%)
 
-Das Theme verlangt: *"Solve a problem you know firsthand."* Kein kommerzielles Tool bedient die Schweiz:
+Meta setzt selbst auf das Thema (Workshop "Agents 102: Best Practices for Verifiable Agents", 28. Okt). Unser Agent ist von Grund auf überprüfbar:
+- **Muse Spark** findet und klassifiziert Befunde (Vision, JSON), **zoomt selbst** in verdächtige Bildbereiche und prüft eigene Befunde in einem zweiten Pass gegen.
+- **SAM 3.1** liefert für jeden Befund eine pixelgenaue Maske als Beleg. Der Agent wählt die Prompt-Strategie je nach Schadenstyp (Box-Prompt für flächige Schäden, Konzept-Prompt für dünne/verstreute) — im Spike nachgewiesen.
+- **Regeln und Zahlen sind Daten und Code**: Lebensdauern aus einer zitierten Tabelle, Summen programmatisch. Das Modell erfindet keine Beträge.
+- Optional: **Einzug-vs-Auszug-Vergleich** (war der Kratzer schon im Einzugsprotokoll?) und **Muse Spark Open** für den Open-Weight-Bonus.
 
-- **CHF-Budgets** mit transparenter Rechnung (kein USD-Proxy)
-- **Schweizer Verfügbarkeit** (IKEA CH; optional Pfister/Micasa) statt US-Retailer
-- Story: Möbel-Einrichtung in der Schweiz ist teuer und intransparent — ein Agent, der ein CHF-Budget ernst nimmt, ist ein Problem, das du selbst kennst
+## Wedge 3 — Länderregeln als austauschbare Pakete (global, Technical Depth)
 
-Zielbild nach dem Hackathon: IKEA-CH-Katalog mit echten CHF-Preisen statt des US-Datensatzes.
+Rule Packs als JSON: ein vollständig zitiertes Paket (Schweiz, paritätische Lebensdauertabelle) + ein generisches Paket (lineare Abschreibung über Nutzungsdauer, klar als Schätzung markiert). Botschaft: "Works for any jurisdiction — rules are data."
 
-## Wedge 3 — Behalten/Ersetzen mit SAM 3.1 (Demo 25%)
+## Pitch (englisch)
 
-Interaktive Auswahl: SAM 3.1 segmentiert die vorhandenen Möbel, der Nutzer klickt an, was bleibt und was raus soll. Die Masken steuern den Muse-Image-Edit — das Original bleibt garantiert da, wo der Nutzer es will. Vorher/Nachher mit sichtbarer Kontrolle ist der **Videomoment** für das 3-Minuten-Video.
+> *"Every renter dreads move-out day. Fair Deposit is an AI agent built on Meta's models: it inspects your photos, separates normal wear from real damage, proves every finding with a SAM 3.1 mask, and calculates what you actually owe under your local depreciation rules — then drafts your reply to the landlord."*
 
-## Verkaufs-Einzeiler (Pitch)
+## Preise — realistische Ziellinie
 
-> *"Jedes AI-Raumdesign-Tool zeigt dir ein Bild voller Möbel, die es nicht gibt. Unser Agent segmentiert deinen Raum mit SAM 3.1, plant ein echtes CHF-Budget, wählt kaufbare Produkte aus einem echten Katalog und redigiert dein Foto so, dass das Bild exakt die Einkaufsliste zeigt — alles auf Metas Modellen."*
+| Preis | Betrag | Weg |
+|---|---|---|
+| Indie Top 5 | $25K–$150K | Alle drei Wedges, starkes 3-Min-Video, robuste Live-Demo |
+| Best Agentic Use-Case | $5K | Sichtbare Autonomie: Zoom, Selbstprüfung, Strategie-Wahl, Brief-Entwurf |
+| Most Viral (X) | $20K | Lotterielos: 30–45 s Clip mit Hook, @-Mentions Meta/Cerebral Valley, früh posten. Keine gekaufte Reichweite |
+| Community Vote | $10K | Discord + persönliches Netzwerk |
+| Best Build on Open Weights | $10K | Inspektions-Pass auf Muse Spark Open via Baseten/Modal (Credits früh beantragen) |
+| ~~Best Creative Build~~ | $5K | Bewusst aufgegeben (Muse Image spielt im Produkt keine Rolle) |
 
-## Realistische Ziellinie
-
-| Ziel | Weg |
-|---|---|
-| Bonus "Best Agentic Use-Case" ($5'000) | Wedge 1 sauber und sichtbar umsetzen |
-| Bonus "Best Creative Build" ($5'000) | Wedge 3 + Muse-Image-Multi-turn-Qualität |
-| Top 5 Indie ($25K–75K) | Alle drei Wedges + starkes 3-Min-Video + lauffähiger Live-Demo |
-
-## Rubric-Audit: Die Idee rückwärts von der Bewertung gebaut
-
-Jede Design-Entscheidung wird gegen die Bewertungsmatrix begründet. Projekt-Kriterium: **maximiert diese Entscheidung Punkte?**
-
-### Stage One (pass/fail) — Theme-Fit + Meta Model API
+## Rubric-Audit
 
 | Kriterium | Status | Massnahme |
 |---|---|---|
-| Passt zum Theme ("Build for Your World") | ✅ | Schweizer Fokus, Problem aus eigener Erfahrung — im Pitch **nennen**, nicht nur zeigen |
-| Nutzt Meta Model API / Open-Weights | ✅ | Spark + Muse Image + SAM 3.1; im Video **explizit zeigen** (Modell-IDs im UI/Overlay sichtbar) |
-| Nicht gebannt ("Simple Image Analyzer" etc.) | ⚠️ Risiko | Agent-Transparenz ist der Beweis: Die UI zeigt die Tool-Loop, nicht nur ein Bild-Ergebnis |
+| Stage 1: Theme-Fit | ✅ | "Build for Your World", eigene Erfahrung im Video nennen |
+| Stage 1: Meta-Modelle | ✅ | Spark + SAM 3.1 (+ Spark Open); Modell-IDs in der UI sichtbar |
+| Anti-Projects | ⚠️ "Simple Image Analyzer" | Agent-Loop sichtbar machen; Output ist eine erledigte Aufgabe (Report + Brief), keine Bildbeschreibung. Kein Medizin-/Politik-Bezug |
+| Impact | ✅ | Echtes Geld, Machtgefälle, globales Problem. "Not legal advice" sauber kommunizieren |
+| Meta-Tooling | ✅ | Spark als Agent + Verifikator, SAM als Beweis-Generator, Strategie-Wahl |
+| Technical Depth | ✅ | Rule Packs, Code-Rechnung mit Tests, zod, SSE, Fehlerzustände |
+| Demo | ⚠️ | Demo-Wohnung vorbereiten (Einzug/Auszug-Paare), Ergebnisse cachen, Video vor Tag 7 |
 
-### Impact (30%) — wer profitiert, wie sehr?
+## Spike-Ergebnis (27. Okt) — technische Machbarkeit belegt
 
-| Kriterium | Status | Massnahme |
-|---|---|---|
-| Wer profitiert | ✅ | Mieter / kleine Budgets in der Schweiz — Einrichtung ist ein Ausgaben-Posten von Tausenden CHF |
-| Wie viel zählt es | ⚠️ Schwächster Punkt der Idee ("nice-to-have"-Vibe) | **Impact-Story auf Vertrauen drehen:** "Das einzige Tool, bei dem das Bild die Quittung ist." Messbar machen: Demo zeigt konkrete CHF-Summe, die eingehalten wurde |
-| Könnte es was werden | ✅ | Marktbewiesen (kommerzielle Wettbewerber) — im Pitch als Validierung framen, nicht verstecken |
+Skripte: `scripts/spike/` (generate-damage, detect-damage). 13 Bilder: 5 mit Muse Image erzeugte Schäden + 1 sauberes Kontrollbild, 6 echte Fotos (Wikimedia Commons, freie Lizenzen) + Kachel-Tests.
 
-### Use of Meta AI Tooling (25%) — beyond basic integration
-
-| Kriterium | Status | Massnahme |
-|---|---|---|
-| Kreativ orchestriert | ✅ | 3 Modelle als ein System: SAM-Masken steuern Muse-Image-Edit; Spark als Agent |
-| Überraschende Fähigkeit | ✅ Kernmoment | **Vision-basierte Verifikation:** muse-spark sieht das *generierte* Bild und prüft, ob die Einkaufslisten-Produkte sichtbar sind (Modell als Verifikator, nicht nur Generator). Gibt das Bild ein Produkt nicht her → Agent re-edited. Niemand macht das |
-| Kein "basic integration" | ✅ | Tool Calling, Selbst-Iteration, Structured Output, Multi-turn-Editing |
-
-### Demo (25%) — hält es live stand, ist das Video gut?
-
-| Kriterium | Status | Massnahme |
-|---|---|---|
-| Working, impressive | ✅ | Konsistentes Before/After + echte Einkaufsliste ist visuell überzeugend |
-| Hält live stand | ⚠️ Risiko | Agent-Loop braucht Zeit → SSE-Stream zeigt Fortschritt (Warten wird Teil der Demo); Ergebnisse cachen; Demo-Video **vor** Tag 7 aufnehmen; Live-Finals zeigen das Video — Video ist das primäre Artefakt |
-| Video genuinely cool | ⚠️ | Storyboard festlegen: 1) Foto + SAM-Klick "Couch bleibt, Tisch raus" 2) Agent-Steps live 3) Before/After + Einkaufsliste mit CHF-Summe 4) IKEA-Link-Klick |
-
-### Technical Depth (20%) — saubere Ausführung
-
-| Kriterium | Status | Massnahme |
-|---|---|---|
-| Sound engineering | ✅ | zod-Validierung, Retry/Timeout, Budget-/Verify-Logik als reiner Code, Tests für Budget-Split |
-| Refined | ⚠️ | Fehlerzustände, Ladeanimationen, sauberes README (englisch für Judges), Open-Source-Lizenz |
-
-### Fazit des Audits
-
-Die Idee deckt alle Kriterien ab; zwei echte Lücken sind identifiziert und eingeplant: (1) Impact-Story "Vertrauen/Bild = Quittung" statt technischem USP, (2) vision-basierte Verifikation als überraschende Fähigkeit. Die grössten Risiken sind nicht Ideen-, sondern Ausführungsrisiken: Latenz im Live-Demo und Videoproduktion.
+- **Erkennung (Spark):** Loch, Kratzer, Kaffeefleck, Kritzeleien erkannt und als *damage* eingestuft (Konfidenz 0.92–0.97); **kein Fehlalarm** im Kontrollbild; alle 6 echten Fotos erkannt. 3–10 s pro Bild.
+- **Masken (SAM 3.1):** Box-Prompt exakt bei flächigen Schäden (Fleck, Wasserschaden, Riss, abblätternde Farbe), versagt bei dünnen Schäden (griff einmal das Sofa). Konzept-Prompt mit Sparks Label maskiert Kratzer/Kritzeleien exakt, versagt aber bei Nahaufnahmen (ganzes Bild) und lieferte beim Loch keine Maske → **Hybrid-Strategie + Plausibilitätscheck** (Maske muss in/nahe Sparks Box liegen).
+- **Offen:** Kleine Schäden (Dübellöcher) auf Raumübersichten — Test nicht aussagekräftig. Gegenmittel: Agent zoomt in Bildkacheln und fordert Nahaufnahmen an.
+- Muse Image filtert manche Prompts (z.B. "red wine stain").
