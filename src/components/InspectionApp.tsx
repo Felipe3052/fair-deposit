@@ -4,8 +4,9 @@ import { useMemo, useRef, useState } from "react";
 import AgentSteps from "@/components/AgentSteps";
 import FindingList from "@/components/FindingList";
 import PhotoEvidence from "@/components/PhotoEvidence";
-import ShareTable from "@/components/ShareTable";
+import ShareTable, { COMPONENT_LABELS, type LineFix } from "@/components/ShareTable";
 import { preparePhoto, readEventStream } from "@/lib/client-image";
+import { ageFromInstalledYear, computeShares, type ShareInput } from "@/lib/fair-share";
 import { getRulePack, type RulePack } from "@/lib/rules";
 import { COMPONENT_TYPES, type AgentStep, type ComponentType, type Finding, type InspectionEvent, type InspectionReport, type ShareLine, type ShareTotals } from "@/lib/agent/types";
 
@@ -14,12 +15,6 @@ interface Claim { id: string; description: string; amount: string }
 interface ComponentAge { key: string; component: ComponentType; variant: string; installedYear: string }
 
 type Phase = "setup" | "running" | "done" | "error";
-
-const COMPONENT_LABELS: Record<ComponentType, string> = {
-  wall_paint: "Wall paint", wallpaper: "Wallpaper", carpet: "Carpet", laminate: "Laminate", vinyl: "Vinyl / linoleum",
-  parquet_finish: "Parquet sealing", parquet_solid: "Parquet / wood floor", tiles: "Tiles", kitchen_counter: "Kitchen countertop",
-  door: "Door", window: "Window", bathroom_fixture: "Bathroom fixture", appliance: "Appliance", other: "Other",
-};
 
 const DEMO = {
   photos: [
@@ -74,6 +69,8 @@ export default function InspectionApp() {
   const [report, setReport] = useState<InspectionReport | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [edited, setEdited] = useState(false);
+  const [runMoveOut, setRunMoveOut] = useState("");
   const [focusPhotoId, setFocusPhotoId] = useState<string | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
 
@@ -120,11 +117,47 @@ export default function InspectionApp() {
     setComponents((prev) => prev.map((c) => ({ ...c, variant: "" })));
   }
 
+  /** Nachträge nach der Analyse (Einbaujahr, Material, Bauteil): gleiche reine Rechnung wie im Agent, nur im Browser. */
+  function recompute(lines: ShareLine[], comps: ComponentAge[]) {
+    const inputs: ShareInput[] = lines.map((l) => {
+      const c = comps.find((x) => x.component === l.component);
+      return {
+        claimId: l.claimId, claimDescription: l.claimDescription, claimedAmount: l.claimedAmount,
+        component: l.component, variant: c?.variant || null,
+        findingClassifications: l.findingClassifications, findingIds: l.findingIds,
+        ageYears: c?.installedYear.length === 4 ? ageFromInstalledYear(Number(c.installedYear), runMoveOut) : null,
+      };
+    });
+    return computeShares(inputs, pack.lifespans, currency);
+  }
+
+  function fixLine(index: number, fix: LineFix) {
+    if (!share) return;
+    const line = share.lines[index];
+    const component = fix.component ?? line.component;
+    let comps = components;
+    if (fix.installedYear !== undefined || fix.variant !== undefined || !comps.some((c) => c.component === component)) {
+      const existing = comps.find((c) => c.component === component);
+      const next: ComponentAge = {
+        key: existing?.key ?? nextKey("k"), component,
+        variant: fix.variant ?? existing?.variant ?? "",
+        installedYear: fix.installedYear ?? existing?.installedYear ?? "",
+      };
+      comps = existing ? comps.map((c) => (c.key === existing.key ? next : c)) : [...comps, next];
+      setComponents(comps);
+    }
+    setShare(recompute(share.lines.map((l, i) => (i === index ? { ...l, component } : l)), comps));
+    setEdited(true);
+  }
+
   async function run() {
     setPhase("running");
     setSteps([]);
     setFindings({});
     setShare(null);
+    setEdited(false);
+    const effectiveMoveOut = moveOutDate || new Date().toISOString().slice(0, 10); // leer = heute (erst im Handler, nicht im Prerender)
+    setRunMoveOut(effectiveMoveOut);
     setVerification(null);
     setReport(null);
     setError(null);
@@ -137,7 +170,7 @@ export default function InspectionApp() {
           rulePack: rulePackId,
           currency,
           tenancyStart,
-          moveOutDate: moveOutDate || new Date().toISOString().slice(0, 10), // leer = heute (erst im Handler, nicht im Prerender)
+          moveOutDate: effectiveMoveOut,
           components: components
             .filter((c) => c.installedYear.length === 4) // unvollständige Jahre ignorieren statt Request scheitern lassen
             .map((c) => ({ component: c.component, installedYear: Number(c.installedYear), ...(c.variant ? { variant: c.variant } : {}) })),
@@ -366,7 +399,17 @@ export default function InspectionApp() {
 
           {error && <div className="rounded-2xl bg-[#fdebe2] p-4 text-sm text-[#8f2f08]">{error}</div>}
 
-          {share && <ShareTable lines={share.lines} totals={share.totals} ruleSource={{ name: pack.name, isEstimate: pack.isEstimate, title: pack.source?.title ?? null, url: pack.source?.url ?? null }} />}
+          {share && (
+            <ShareTable
+              lines={share.lines}
+              totals={share.totals}
+              ruleSource={{ name: pack.name, isEstimate: pack.isEstimate, title: pack.source?.title ?? null, url: pack.source?.url ?? null }}
+              lifespans={pack.lifespans}
+              componentInputs={Object.fromEntries(components.map((c) => [c.component, { installedYear: c.installedYear, variant: c.variant }]))}
+              onFix={phase === "done" ? fixLine : undefined}
+              edited={edited}
+            />
+          )}
 
           <div className="grid gap-6 lg:grid-cols-[1.6fr_1fr]">
             <div className="grid content-start gap-4 sm:grid-cols-2">

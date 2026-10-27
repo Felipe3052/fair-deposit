@@ -1,6 +1,18 @@
 "use client";
 
-import type { ShareLine, ShareTotals } from "@/lib/agent/types";
+import { COMPONENT_TYPES, type ComponentType, type ShareLine, type ShareTotals } from "@/lib/agent/types";
+import type { Lifespan } from "@/lib/fair-share";
+
+export const COMPONENT_LABELS: Record<ComponentType, string> = {
+  wall_paint: "Wall paint", wallpaper: "Wallpaper", carpet: "Carpet", laminate: "Laminate", vinyl: "Vinyl / linoleum",
+  parquet_finish: "Parquet sealing", parquet_solid: "Parquet / wood floor", tiles: "Tiles", kitchen_counter: "Kitchen countertop",
+  door: "Door", window: "Window", bathroom_fixture: "Bathroom fixture", appliance: "Appliance", other: "Other",
+};
+
+/** Nachtrag des Mieters zu einer offenen Position. */
+export interface LineFix { component?: ComponentType; installedYear?: string; variant?: string }
+
+const fixInputClass = "rounded-lg border border-[#e6d49a] bg-[#fffaf0] px-2 py-1 text-xs text-[#2c3a30] outline-none focus:border-[#c99a12]";
 
 const STATUS: Record<ShareLine["status"], { label: string; className: string }> = {
   damage: { label: "damage", className: "bg-[#fdebe2] text-[#b13d0c]" },
@@ -18,10 +30,19 @@ export default function ShareTable({
   lines,
   totals,
   ruleSource,
+  lifespans,
+  componentInputs,
+  onFix,
+  edited,
 }: {
   lines: ShareLine[];
   totals: ShareTotals;
   ruleSource: { name: string; isEstimate: boolean; title: string | null; url: string | null };
+  lifespans: Lifespan[];
+  componentInputs: Partial<Record<ComponentType, { installedYear: string; variant: string }>>;
+  /** Nur nach Abschluss gesetzt; ohne onFix keine Nachtrags-Felder */
+  onFix?: (index: number, fix: LineFix) => void;
+  edited: boolean;
 }) {
   const saved = totals.claimed - totals.tenantPays;
   return (
@@ -34,7 +55,8 @@ export default function ShareTable({
         <div className="rounded-2xl bg-[#294b38] p-4 text-white">
           <div className="text-xs font-medium uppercase tracking-wide text-white/70">Your fair share</div>
           <div className="mt-1 text-2xl font-semibold">{formatMoney(totals.tenantPays, totals.currency)}</div>
-          {totals.openLines > 0 && <div className="mt-1 text-xs text-white/70">+ {totals.openLines} line(s) need more input</div>}
+          {totals.openLines > 0 && <div className="mt-1 text-xs text-white/70">+ {totals.openLines} line(s) need more input{onFix ? " — fill in below" : ""}</div>}
+          {edited && totals.openLines === 0 && <div className="mt-1 text-xs text-white/70">Updated with your input</div>}
         </div>
         <div className="rounded-2xl bg-white p-4 ring-1 ring-black/5">
           <div className="text-xs font-medium uppercase tracking-wide text-[#849084]">Difference</div>
@@ -63,6 +85,9 @@ export default function ShareTable({
                 <td className="px-4 py-3">
                   <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${STATUS[l.status].className}`}>{STATUS[l.status].label}</span>
                   <div className="mt-1 max-w-sm text-xs leading-5 text-[#5f6d63]">{l.explanation}</div>
+                  {onFix && (l.status === "age_unknown" || l.status === "lifespan_unknown" || l.status === "damage") && (
+                    <LineFixer line={l} lifespans={lifespans} input={componentInputs[l.component]} onFix={(fix) => onFix(i, fix)} />
+                  )}
                 </td>
                 <td className="px-4 py-3 text-right tabular-nums text-[#5f6d63]">
                   {l.ageYears ?? "?"} / {l.lifespanYears ?? "?"} y
@@ -91,6 +116,50 @@ export default function ShareTable({
         )}
         . Numbers are computed in code from your inputs, never by the model. Not legal advice.
       </p>
+    </div>
+  );
+}
+
+/** Felder für offene Positionen: Bauteil (falls nicht in der Tabelle), Material und Einbaujahr. */
+function LineFixer({
+  line,
+  lifespans,
+  input,
+  onFix,
+}: {
+  line: ShareLine;
+  lifespans: Lifespan[];
+  input?: { installedYear: string; variant: string };
+  onFix: (fix: LineFix) => void;
+}) {
+  const known = new Set(lifespans.map((l) => l.component));
+  const variants = lifespans.filter((l) => l.component === line.component && l.variant);
+  const standard = lifespans.find((l) => l.component === line.component && !l.variant);
+  return (
+    <div className="mt-2 flex flex-wrap items-center gap-1.5">
+      {line.status === "lifespan_unknown" ? (
+        <select value="" onChange={(e) => onFix({ component: e.target.value as ComponentType })} className={fixInputClass} aria-label="Which component is this?">
+          <option value="" disabled>Which component is this?</option>
+          {COMPONENT_TYPES.filter((t) => known.has(t)).map((t) => <option key={t} value={t}>{COMPONENT_LABELS[t]}</option>)}
+        </select>
+      ) : (
+        <>
+          {variants.length > 0 && (
+            <select value={input?.variant ?? ""} onChange={(e) => onFix({ variant: e.target.value })} className={fixInputClass} aria-label="Material">
+              <option value="">{standard?.label ?? "Standard"}</option>
+              {variants.map((v) => <option key={v.variant} value={v.variant}>{v.label}</option>)}
+            </select>
+          )}
+          <input
+            value={input?.installedYear ?? ""}
+            onChange={(e) => onFix({ installedYear: e.target.value.replace(/\D/g, "").slice(0, 4) })}
+            placeholder="Last renewed (year)"
+            inputMode="numeric"
+            className={`${fixInputClass} w-36`}
+            aria-label="Year last renewed"
+          />
+        </>
+      )}
     </div>
   );
 }
