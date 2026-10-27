@@ -2,6 +2,7 @@
 
 - `raw/` — heruntergeladener IKEA-Datensatz (gitignored). Download siehe unten.
 - `catalog.json` — generierter, aufbereiteter Katalog (gitignored, von `scripts/prepare_catalog.py` erzeugt).
+- `test-room.png` — synthetisches Testraumfoto für den lokalen End-to-End-Durchlauf.
 
 ## IKEA-Datensatz herunterladen (einmalig)
 

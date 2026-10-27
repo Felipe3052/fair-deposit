@@ -21,7 +21,7 @@ hf download jeffreyszhou/ikea-us-products-2025 products-us.jsonl \
   --repo-type dataset --local-dir data/raw
 ```
 
-Bilder: optional alle Hero-Images herunterladen (`images-us/`) — für den Prototyp reicht der Remote-Image-Resolver von Hugging Face (siehe `prepare_catalog.py`).
+Bilder: Das Dataset enthält IKEA-Dateinamen unter `images-us/`. Der Katalog leitet diese Dateinamen auf den offiziellen IKEA-US-Bildserver (`ikea.com/us/en/images/products/`) um. Die Hugging-Face-Resolver-URLs sind in mehreren geprüften Fällen nicht mehr erreichbar.
 
 ### Lizenz-Hinweis (offen, siehe OPEN-QUESTIONS.md)
 

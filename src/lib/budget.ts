@@ -1,10 +1,12 @@
+import { USD_CHF_RATE } from "@/lib/currency";
+
 export interface BudgetAllocation {
   category: string;
   maxChf: number;
   share: number;
 }
 
-export const USD_CHF_RATE = Number(process.env.USD_CHF_RATE ?? 0.88);
+export { USD_CHF_RATE } from "@/lib/currency";
 
 export function toChf(usd: number): number {
   return Math.round(usd * USD_CHF_RATE * 100) / 100;

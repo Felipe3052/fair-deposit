@@ -11,7 +11,7 @@ AI-gestützter Interior Designer: Nutzer laden ein Foto ihres Zimmers hoch, wäh
 | Raum-Redesign (Bild-Bearbeitung) | `muse-image-1.0` (Meta Model API, image-to-image) |
 | Produktsuche | Structured Output über einen echten Produktkatalog (IKEA-Datensatz, lokal als JSON) |
 | Produktdaten | [jeffreyszhou/ikea-us-products-2025](https://huggingface.co/datasets/jeffreyszhou/ikea-us-products-2025) (~30'000 echte IKEA-Produkte) |
-| Optional (Meta-Tooling-Bonus) | SAM 3.1 — bestehende Möbel segmentieren für "before/after"-Overlays |
+| Möbel-Auswahl | SAM 3.1 — Möbelmasken im Foto antippen und Behalten/Ersetzen festlegen |
 
 ## Quickstart
 

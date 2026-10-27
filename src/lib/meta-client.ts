@@ -22,6 +22,7 @@ export function metaClient(): OpenAI {
 
 export const MODEL_SPARK = process.env.MODEL_SPARK ?? "muse-spark-1.3";
 export const MODEL_IMAGE = process.env.MODEL_IMAGE ?? "muse-image-1.0";
+export const MODEL_SAM = process.env.MODEL_SAM?.trim() || "sam-3.1";
 
 /** muse-spark ist ein Reasoning-Modell: braucht grosszügige max_tokens (siehe docs/ARCHITECTURE.md). */
 export const SPARK_MAX_TOKENS = 3000;

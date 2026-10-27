@@ -8,14 +8,15 @@ import {
 import { checkBudget, planBudget, sumChf } from "@/lib/budget";
 import { analyzeRoom } from "@/lib/agent/tools/analyze-room";
 import { editRoomImage } from "@/lib/agent/tools/edit-image";
-import { verifyBudget, verifyImageConsistency } from "@/lib/agent/tools/verify";
+import { verifyImageConsistency } from "@/lib/agent/tools/verify";
 import type {
   DesignEvent,
   DesignSession,
   RoomAnalysis,
+  FurnitureSelection,
 } from "@/lib/agent/types";
 
-const MAX_ITERATIONS = 8; // Iterations-Cap (Budget-Diskiplin)
+const MAX_ITERATIONS = 12; // Genug Runden für Suche, Edit, Verifikation und Abschluss
 
 /** Tools, die der muse-spark-Agent im Loop selbst aufrufen kann. */
 const AGENT_TOOLS = [
@@ -108,7 +109,9 @@ const AGENT_TOOLS = [
 export async function* runDesignAgent(
   imageBase64: string,
   style: string,
-  budgetChf: number
+  budgetChf: number,
+  changeRequest: string,
+  furnitureSelection: FurnitureSelection
 ): AsyncGenerator<DesignEvent, void, void> {
   const agentSteps: DesignSession["agentSteps"] = [];
   let modelCalls = 0;
@@ -134,32 +137,40 @@ export async function* runDesignAgent(
     const messages: Record<string, unknown>[] = [
       {
         role: "system",
-        content: `Du bist ein Interior-Design-Agent. Dein Auftrag: einen Wohnraum im Stil "${style}" innerhalb eines Budgets von ${budgetChf} CHF neu einrichten.
+        content: `Du bist ein Interior-Design-Agent. Setze die ausdrücklich genannten Änderungswünsche für den angegebenen Stil und das Budget um.
 
 Regeln:
-1. Rufe zuerst search_catalog, um reale Kandidaten zu finden (Nutze die Budget-Allokation unten als Richtwert pro Kategorie).
-2. Wähle eine koordinierte Auswahl (max. 10 Produkte), die zum Stil passt und deren Summe unter dem Budget bleibt.
-3. Rufe edit_room_image auf, um das redesignierte Foto zu erzeugen.
-4. Rufe verify auf. Wenn Budget überschritten oder Produkte im Bild fehlen → wähle günstigere/passendere Alternativen und wiederhole.
-5. Rufe finish auf, sobald verify bestanden hat.
+1. Die Objekt-Auswahl des Nutzers ist verbindlich. Ändere niemals ein Objekt mit Aktion "keep". Suche Produkte passend zu den als "replace" markierten Objekten; falls keine Möbel zum Ersetzen markiert sind, folge nur dem beschriebenen Änderungswunsch. Verwende die Budget-Allokation als Richtwert. Wiederhole keine bereits gesuchten Kategorien.
+2. Wähle eine koordinierte Auswahl (max. 10 Produkte), die zu Stil und Änderungswunsch passt und deren Summe unter dem Budget bleibt. Bei einer umfassenden Raumgestaltung sollen die Hauptmöbel den grössten Anteil ausmachen; strebe ungefähr 70–90% des Budgets an, sofern der Wunsch keinen kleineren Umfang vorgibt. Fülle die Liste nie mit irrelevanten Kleinteilen, nur um das Budget auszuschöpfen.
+3. Rufe edit_room_image auf und rufe direkt danach verify mit exakt denselben Produkt-IDs auf. Keine weitere Katalogsuche zwischen Edit und Verifikation.
+4. Wenn verify Probleme meldet, ändere nur die betroffenen Produkte und wiederhole Edit und Verify.
+5. Rufe finish sofort auf, sobald verify bestanden hat.
 
 Budget-Allokation (Richtwert max. CHF je Kategorie):
 ${allocation.map((a) => `- ${a.category}: ${a.maxChf} CHF`).join("\n")}
 
 Erkannte Möbel im Raum: ${analysis.currentFurniture.join(", ")}
+SAM-Auswahl des Nutzers (verbindlich): ${furnitureSelection.map((item) => `${item.label}: ${item.action === "keep" ? "BEHALTEN" : "ERSETZEN"}`).join("; ")}
 Stilmerkmale, die erhalten bleiben: ${analysis.styleNotes}
 
 Antworte auf Deutsch. Produktdaten kommen ausschliesslich aus dem Katalog — erfinde niemals Produkte oder Preise.`,
       },
       {
         role: "user",
-        content: `Erstelle das Design für den Stil "${style}" mit Budget ${budgetChf} CHF. Beginne mit search_catalog.`,
+        content: `Erstelle ein Design im Stil "${style}" mit einem Budget von ${budgetChf} CHF.
+Zusätzliche Wünsche des Nutzers: ${changeRequest || "keine; nutze Möbelauswahl, Stil und Budget"}
+Objekte, die ersetzt werden sollen: ${furnitureSelection.filter((item) => item.action === "replace").map((item) => `${item.label} (${item.category})`).join(", ") || "keine — bestehende Möbel bleiben erhalten"}
+Beginne mit search_catalog und priorisiere passende Hauptmöbel mit unterschiedlichen Preislagen.`,
       },
     ];
 
     let finalIds: string[] | null = null;
-    let lastVerification: { withinBudget: boolean; issues: string[] } | null =
-      null;
+    let lastVerification: {
+      productIds: string[];
+      withinBudget: boolean;
+      imageListConsistent: boolean;
+      issues: string[];
+    } | null = null;
     let redesignImage: string | null = null;
 
     for (let i = 0; i < MAX_ITERATIONS && !finalIds; i++) {
@@ -204,10 +215,15 @@ Antworte auf Deutsch. Produktdaten kommen ausschliesslich aus dem Katalog — er
         let result: unknown;
 
         if (name === "search_catalog") {
-          const cats = (args.categories as string[]) ?? [];
+          const requestedCats = (args.categories as string[]) ?? [];
+          const selectedReplaceCategories = [...new Set(
+            furnitureSelection.filter((item) => item.action === "replace").map((item) => item.category)
+          )];
+          const cats = selectedReplaceCategories.length ? selectedReplaceCategories : requestedCats;
           const candidates = searchCatalog({
             categories: cats,
             maxChf: Number(args.maxChf ?? budgetChf),
+            limit: 18,
           });
           yield step(
             "search_catalog",
@@ -222,8 +238,21 @@ Antworte auf Deutsch. Produktdaten kommen ausschliesslich aus dem Katalog — er
             sourceUrl: c.sourceUrl,
           }));
         } else if (name === "edit_room_image") {
-          const ids = (args.product_ids as string[]) ?? [];
+          const ids = [...new Set((args.product_ids as string[]) ?? [])];
           const products = getProducts(ids);
+          if (!ids.length || products.length !== ids.length) {
+            result = {
+              ok: false,
+              error: "Wähle mindestens ein gültiges Katalogprodukt.",
+            };
+            messages.push({
+              role: "tool",
+              tool_call_id: tc.id,
+              content: JSON.stringify(result),
+            } as never);
+            continue;
+          }
+          lastVerification = null;
           yield step(
             "edit_room_image",
             `Redesign mit muse-image (${products.length} Produkte im Bild)`
@@ -231,36 +260,45 @@ Antworte auf Deutsch. Produktdaten kommen ausschliesslich aus dem Katalog — er
           redesignImage = await editRoomImage({
             imageBase64,
             style: `${style} — ${String(args.style_hint ?? "")}`.trim(),
-            keep: analysis.currentFurniture,
-            replace: [],
-            productTitles: products.map((p) => p.title),
+            keep: furnitureSelection.filter((item) => item.action === "keep").map((item) => item.label),
+            replace: furnitureSelection.filter((item) => item.action === "replace").map(({ label, category }) => ({ label, category })),
+            products: products.map(({ title, category, imageUrl }) => ({ title, category, imageUrl })),
           });
           yield { type: "image", dataUrl: redesignImage };
           result = { ok: true, note: "Bild erzeugt. Rufe verify auf." };
         } else if (name === "verify") {
-          const ids = (args.product_ids as string[]) ?? [];
+          const ids = [...new Set((args.product_ids as string[]) ?? [])];
           const products = getProducts(ids);
           const total = sumChf(products.map((p) => p.priceChf));
           const budgetCheck = checkBudget(total, budgetChf);
-          let imageCheck = { imageListConsistent: true, missing: [] as string[] };
+          let imageCheck = {
+            imageListConsistent: false,
+            missing: ["Redesign-Bild fehlt"],
+          };
           if (redesignImage) {
-            const b64 = redesignImage.replace(/^data:image\/\w+;base64,/, "");
             imageCheck = await verifyImageConsistency(
-              b64,
-              products.map((p) => p.title)
+              redesignImage,
+              products.map((p) => ({ title: p.title, imageUrl: p.imageUrl }))
             );
             modelCalls++;
           }
           const issues: string[] = [];
+          if (!ids.length || products.length !== ids.length)
+            issues.push("Ungültige oder leere Produktauswahl");
           if (!budgetCheck.withinBudget)
             issues.push(
               `Budget überschritten: ${total} CHF > ${budgetChf} CHF`
             );
-          if (!imageCheck.imageListConsistent && imageCheck.missing.length)
+          if (!imageCheck.imageListConsistent)
             issues.push(
-              `Im Bild fehlen: ${imageCheck.missing.join(", ")}`
+              `Bild-Verifikation fehlgeschlagen: ${imageCheck.missing.join(", ")}`
             );
-          lastVerification = { withinBudget: budgetCheck.withinBudget, issues };
+          lastVerification = {
+            productIds: products.map((p) => p.id),
+            withinBudget: budgetCheck.withinBudget && products.length > 0,
+            imageListConsistent: imageCheck.imageListConsistent,
+            issues,
+          };
           yield step(
             "verify",
             issues.length
@@ -269,15 +307,27 @@ Antworte auf Deutsch. Produktdaten kommen ausschliesslich aus dem Katalog — er
           );
           result = { totalChf: total, budgetChf, issues };
         } else if (name === "finish") {
-          const ids = (args.product_ids as string[]) ?? [];
+          const ids = [...new Set((args.product_ids as string[]) ?? [])];
           const products = getProducts(ids);
           const total = sumChf(products.map((p) => p.priceChf));
           const budgetCheck = checkBudget(total, budgetChf);
-          if (!budgetCheck.withinBudget) {
-            yield step("finish", `Abgelehnt: Budget überschritten (${total} CHF)`);
+          const verifiedIds = lastVerification?.productIds ?? [];
+          const sameSelection =
+            products.length === ids.length &&
+            verifiedIds.length === products.length &&
+            products.every((p, index) => p.id === verifiedIds[index]);
+          const verificationPassed =
+            sameSelection &&
+            Boolean(lastVerification?.withinBudget) &&
+            Boolean(lastVerification?.imageListConsistent);
+          if (!budgetCheck.withinBudget || !verificationPassed) {
+            const reason = !budgetCheck.withinBudget
+              ? `Budget überschritten (${total} CHF)`
+              : "verify muss für dieselbe Produktauswahl nach dem letzten Bild-Edit erfolgreich sein";
+            yield step("finish", `Abgelehnt: ${reason}`);
             result = {
               ok: false,
-              error: `Summe ${total} CHF überschreitet Budget ${budgetChf} CHF. Wähle günstigere Alternativen und rufe erneut finish auf.`,
+              error: `${reason}. Prüfe Auswahl und Bild erneut, bevor du finish aufrufst.`,
             };
           } else {
             finalIds = products.map((p) => p.id);
@@ -294,6 +344,22 @@ Antworte auf Deutsch. Produktdaten kommen ausschliesslich aus dem Katalog — er
           content: JSON.stringify(result),
         } as never);
       }
+    }
+
+    // Ein erfolgreicher Verify ist bereits die programmatische Freigabe. Falls
+    // das Iterationslimit erreicht wird, schliesse genau diese Auswahl ab.
+    if (
+      !finalIds &&
+      redesignImage &&
+      lastVerification?.withinBudget &&
+      lastVerification.imageListConsistent &&
+      lastVerification.issues.length === 0
+    ) {
+      finalIds = lastVerification.productIds;
+      yield step(
+        "finish",
+        "Abgeschlossen mit der zuletzt erfolgreich verifizierten Auswahl"
+      );
     }
 
     if (!finalIds) {
@@ -323,13 +389,13 @@ Antworte auf Deutsch. Produktdaten kommen ausschliesslich aus dem Katalog — er
 
     const session: DesignSession = {
       id: crypto.randomUUID(),
-      request: { style, budgetChf },
+      request: { style, budgetChf, changeRequest, furnitureSelection },
       analysis,
       budgetPlan,
       shoppingList,
       redesignImageUrl: redesignImage ?? "",
       verification: {
-        imageListConsistent: lastVerification?.withinBudget ?? true,
+        imageListConsistent: lastVerification?.imageListConsistent ?? false,
         withinBudget: budgetCheck.withinBudget,
         issues: lastVerification?.issues ?? [],
       },

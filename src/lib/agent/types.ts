@@ -1,13 +1,23 @@
 import { z } from "zod";
 
 export const designRequestSchema = z.object({
-  /** Raumfoto als Base64 (ohne data-URL-Präfix) oder mit data:image/...;base64, Präfix */
+  /** Raumfoto als Base64 oder data:image/...;base64 URL */
   imageBase64: z.string().min(100),
   style: z.string().min(1).max(120),
   budgetChf: z.number().positive().max(100_000),
+  changeRequest: z.string().trim().max(500),
+  furnitureSelection: z.array(z.object({
+    id: z.string().min(1).max(80),
+    label: z.string().min(1).max(80),
+    category: z.enum([
+      "sofa", "armchair", "coffee_table", "table", "dining", "bookcase", "lamp", "rug",
+    ]),
+    action: z.enum(["keep", "replace"]),
+  })).min(1).max(40),
 });
 
 export type DesignRequest = z.infer<typeof designRequestSchema>;
+export type FurnitureSelection = DesignRequest["furnitureSelection"];
 
 // ---------------------------------------------------------------------------
 // Ergebnisse der Pipeline-Schritte
@@ -57,7 +67,7 @@ export interface AgentStep {
 
 export interface DesignSession {
   id: string;
-  request: { style: string; budgetChf: number };
+  request: { style: string; budgetChf: number; changeRequest: string; furnitureSelection: z.infer<typeof designRequestSchema>["furnitureSelection"] };
   analysis: RoomAnalysis;
   budgetPlan: BudgetPlan;
   shoppingList: ShoppingList;
