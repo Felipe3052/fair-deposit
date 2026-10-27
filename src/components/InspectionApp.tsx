@@ -192,8 +192,8 @@ export default function InspectionApp() {
               proves every finding with a mask, and computes your fair share from the component&apos;s remaining value.
             </p>
           </div>
-          {/* eslint-disable-next-line @next/next/no-img-element -- statisches Maskottchen, weisser Hintergrund per multiply ausgeblendet */}
-          <img src="/mascot/inspector.webp" alt="Fair Deposit inspector mascot" width={180} height={180} className="hidden h-44 w-44 shrink-0 mix-blend-multiply sm:block" />
+          {/* eslint-disable-next-line @next/next/no-img-element -- statisches Maskottchen mit transparentem Hintergrund */}
+          <img src="/mascot/inspector.webp" alt="Fair Deposit inspector mascot" width={180} height={180} className="hidden h-44 w-44 shrink-0 sm:block" />
         </section>
       )}
 
