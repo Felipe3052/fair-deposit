@@ -1,17 +1,34 @@
 import { buildObjectPrompt, decodeMaskToSVGPath, parseImageStream, recordsOfKind } from "@meta-sam/parser";
 import { MODEL_SAM, metaClient } from "@/lib/meta-client";
-import { coverage, type NormalizedImage } from "@/lib/images";
+import { coverage, iou, type NormalizedImage } from "@/lib/images";
 import type { Box, Evidence, Finding } from "@/lib/agent/types";
 
 export type SegmentStrategy = "box" | "concept";
 
 /**
- * Spike-Erkenntnis: Box-Prompt ist exakt bei flächigen Schäden, greift bei dünnen
- * Schäden aber das dominante Objekt in der Box; Konzept-Prompt maskiert Kratzer und
- * Kritzeleien exakt, kann aber am Ziel vorbei oder ganz leer laufen.
+ * Dünne/verstreute Schäden: Der Box-Prompt greift hier das dominante Objekt in der Box
+ * (Sofa statt Kritzeleien, ganzer Boden statt Kratzer) — dafür nie auf Box zurückfallen.
  */
+const THIN_CATEGORIES: ReadonlySet<Finding["category"]> = new Set(["scratch", "marks", "crack"]);
+
+/**
+ * SAM-Konzept-Prompts funktionieren nur mit kurzen Nomen: "crayon drawings on wall" → 0 Masken,
+ * "drawing" → jede Kritzelei einzeln. Darum feste Kurzbegriffe pro Kategorie plus Sparks Label.
+ */
+const CONCEPT_TERMS: Record<Finding["category"], string[]> = {
+  hole: ["hole"],
+  scratch: ["scratches", "scratch"],
+  stain: ["stain"],
+  crack: ["crack"],
+  marks: ["drawing", "scribble", "scuff mark"],
+  water_damage: ["water stain"],
+  mold: ["mold"],
+  peeling_paint: ["peeling paint"],
+  other: [],
+};
+
 export function defaultStrategy(finding: Pick<Finding, "category">): SegmentStrategy {
-  return finding.category === "scratch" || finding.category === "marks" ? "concept" : "box";
+  return THIN_CATEGORIES.has(finding.category) ? "concept" : "box";
 }
 
 async function runSam(image: NormalizedImage, inputText: string) {
@@ -51,19 +68,35 @@ export interface SegmentResult {
   tried: { strategy: SegmentStrategy; masks: number; plausible: boolean }[];
 }
 
-/** Maske für einen Befund; probiert die gewählte Strategie, dann die andere. */
+type SamMask = Awaited<ReturnType<typeof runSam>>[number];
+
+/** Alle Kurzbegriffe parallel; Instanzen über Begriffe hinweg zusammenführen (gleiche Stelle → höhere Konfidenz). */
+async function runConcepts(finding: Finding, image: NormalizedImage): Promise<SamMask[]> {
+  const terms = [...new Set([...CONCEPT_TERMS[finding.category], finding.label.toLowerCase()])];
+  const results = await Promise.all(terms.map((t) => runSam(image, t).catch(() => [] as SamMask[])));
+  const merged: SamMask[] = [];
+  for (const m of results.flat()) {
+    const dup = merged.findIndex((x) => iou(x.bounds, m.bounds) > 0.5);
+    if (dup < 0) merged.push(m);
+    else if ((m.confidence ?? 0) > (merged[dup].confidence ?? 0)) merged[dup] = m;
+  }
+  return merged;
+}
+
+/** Maske für einen Befund; probiert die gewählte Strategie, dann die andere (Box nie bei dünnen Schäden). */
 export async function segmentFinding(
   finding: Finding,
   image: NormalizedImage,
   preferred: SegmentStrategy = defaultStrategy(finding)
 ): Promise<SegmentResult> {
-  const order: SegmentStrategy[] = preferred === "box" ? ["box", "concept"] : ["concept", "box"];
+  const order: SegmentStrategy[] = THIN_CATEGORIES.has(finding.category)
+    ? ["concept"]
+    : preferred === "box" ? ["box", "concept"] : ["concept", "box"];
   const tried: SegmentResult["tried"] = [];
   for (const strategy of order) {
-    const inputText = strategy === "concept"
-      ? finding.label
-      : buildObjectPrompt({ size: { width: image.width, height: image.height }, objects: [{ id: 0, prompts: [{ box: finding.box }] }] });
-    const masks = await runSam(image, inputText);
+    const masks = strategy === "concept"
+      ? await runConcepts(finding, image)
+      : await runSam(image, buildObjectPrompt({ size: { width: image.width, height: image.height }, objects: [{ id: 0, prompts: [{ box: finding.box }] }] }));
     // Konzept-Prompts liefern evtl. mehrere Instanzen (einzelne Kratzer) → alle plausiblen behalten
     const candidates = masks.filter((m) => plausible(m.bounds, finding));
     tried.push({ strategy, masks: masks.length, plausible: candidates.length > 0 });

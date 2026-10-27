@@ -41,7 +41,7 @@ Bewertung (Stage 2, 0–10): Impact 30% · Meta-Tooling 25% · Demo 25% · Techn
 - [x] ShareTable: Position, Alter/Lebensdauer, Restwert-%, Forderung vs. Anteil, Regelquelle, "Not legal advice"
 - [x] Maskottchen (Inspektor-Plüschfigur, per `scripts/spike/generate-mascot.mjs` mit Muse Image erzeugt) in Header, Hero und Lauf-Ansicht
 - [x] **E2E im Browser:** Demo-Wohnung, verifiziert, 2'900 → 391.50 CHF; `npm run build` grün
-- Offen → Tag 5: **Maskenqualität** — Kritzeleien-Maske greift das Sofa, Kratzer-Maske füllt den ganzen Bodenstreifen. Plausibilitätscheck prüft nur Box-Abdeckung; braucht zusätzlich "Maske darf Box nicht fast vollständig füllen" bzw. Spark-Check auf Masken-Crop.
+- [x] **Maskenqualität** (direkt nachgezogen): SAM-Konzept-Prompts nur mit kurzen Nomen ("drawing", "scratches" statt Sparks Satz-Label → vorher 0 Masken), mehrere Begriffe parallel + Instanzen zusammengeführt; dünne Schäden (Kratzer, Kritzeleien, Risse) nie mehr per Box-Prompt (griff Sofa / ganzen Boden). Kritzeleien und Kratzer jetzt einzeln maskiert.
 
 ### Tag 5 (Fr 30. Okt) — Verifikation + Agent-Tiefe
 - [ ] `verify-report.ts`: Code-Checks + Spark-Gegenprüfung auf Crops, Agent iteriert bei Fehlern

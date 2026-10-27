@@ -44,7 +44,7 @@ const AGENT_TOOLS = [
     type: "function" as const,
     function: {
       name: "segment_findings",
-      description: "Create pixel-accurate SAM 3.1 evidence masks. strategy 'box' suits area damage (stains, water damage, cracks, holes, peeling paint); 'concept' suits thin or scattered damage (scratches, marks). The other strategy is tried automatically if the first one fails the plausibility check.",
+      description: "Create pixel-accurate SAM 3.1 evidence masks. strategy 'box' suits area damage (stains, water damage, cracks, holes, peeling paint); 'concept' suits thin or scattered damage (scratches, marks, cracks). The other strategy is tried automatically if the first one fails the plausibility check — except for thin damage, which never uses 'box' because a box prompt grabs the dominant object (sofa, whole floor) instead of the damage.",
       parameters: {
         type: "object",
         properties: {
