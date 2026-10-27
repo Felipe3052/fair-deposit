@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "node --test src/lib/fair-share.test.ts"
   },
   "dependencies": {
     "@meta-sam/parser": "^0.1.0",
@@ -14,6 +15,7 @@
     "openai": "^7.44.0",
     "react": "19.3.0",
     "react-dom": "19.3.0",
+    "sharp": "^0.35.5",
     "zod": "^4.6.7"
   },
   "devDependencies": {

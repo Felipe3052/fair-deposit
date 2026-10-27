@@ -1,17 +1,17 @@
 "use client";
 
-export interface AgentStep {
-  tool: string;
-  summary: string;
-  at: string;
-}
+import type { AgentStep } from "@/lib/agent/types";
 
 const TOOL_LABELS: Record<string, string> = {
-  analyze_room: "Vision-Analyse",
-  search_catalog: "Katalog-Suche",
-  edit_room_image: "Redesign (muse-image)",
-  verify: "Verifikation",
-  finish: "Abschluss",
+  prepare: "Preparing photos",
+  inspect_photos: "Inspection (muse-spark vision)",
+  zoom_region: "Zoom",
+  segment_findings: "Evidence masks (SAM 3.1)",
+  review_findings: "Second look",
+  reject_finding: "Rejected finding",
+  compute_share: "Fair share (code)",
+  verify_report: "Verification",
+  finish: "Done",
 };
 
 export default function AgentSteps({
@@ -26,8 +26,8 @@ export default function AgentSteps({
       <div className="flex items-start gap-3 rounded-2xl bg-[#f7f8f4] p-4 text-sm text-[#778378]">
         <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white text-[#6f866e] shadow-sm" aria-hidden="true">✦</span>
         <span className="leading-5">
-          Sobald du startest, siehst du hier Analyse, Produktsuche und die
-          Verifikation deines Entwurfs.
+          Once you start, the agent&apos;s inspection, evidence and
+          verification steps appear here live.
         </span>
       </div>
     );
@@ -59,7 +59,7 @@ export default function AgentSteps({
       ))}
       {running && (
         <li className="ml-10 pt-1 text-xs font-medium text-[#849084]">
-          Der Agent arbeitet weiter …
+          The agent is still working …
         </li>
       )}
     </ol>

@@ -13,15 +13,15 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Raumgefühl · AI Interior Studio",
+  title: "Fair Deposit · Move-out Inspection Agent",
   description:
-    "Gestalte dein Zuhause neu: KI-Raumdesign mit konkreten Wünschen und echten Möbelprodukten.",
+    "An AI agent that inspects move-out photos, separates normal wear from damage and calculates the tenant's fair share.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
-      lang="de-CH"
+      lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">{children}</body>

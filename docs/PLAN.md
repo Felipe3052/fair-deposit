@@ -25,12 +25,13 @@ Bewertung (Stage 2, 0–10): Impact 30% · Meta-Tooling 25% · Demo 25% · Techn
 - [ ] **Baseten-Credits beantragen** (nur 2'000 Plätze, für Open-Weight-Bonus), optional Modal
 - [ ] Repo umbenennen (z.B. `fair-deposit`) — vor dem Public-Schalten
 
-### Tag 3 (Mi 28. Okt) — Backend: Inspektions-Agent
-- [ ] Altlasten löschen (Katalog, Budget, edit-image, prepare_catalog.py)
-- [ ] `types.ts` (zod), `inspect-photo.ts`, `zoom-region.ts`, `segment-finding.ts` (Hybrid + Plausibilitätscheck)
-- [ ] Rule Packs `ch.json` (Werte **aus der Originalquelle** übernehmen, zitieren) + `generic.json` (als Schätzung markiert)
-- [ ] `fair-share.ts` + Unit-Tests (Restwert, Summen, Randfälle: Alter > Lebensdauer, fehlendes Alter)
-- [ ] `inspection-agent.ts` + `/api/inspect` (SSE), per curl mit Spike-Bildern testen
+### Tag 3 (Mi 28. Okt) — Backend: Inspektions-Agent ✅ (27. Okt abends vorgezogen)
+- [x] Altlasten löschen (Katalog, Budget, edit-image, prepare_catalog.py, alte UI)
+- [x] `types.ts` (zod), `inspect-photo.ts`, Zoom (im Agenten, Kacheln/Region), `segment-finding.ts` (Hybrid + Plausibilitätscheck), `verify-report.ts` (Code-Checks + Vision-Gegenprüfung)
+- [x] Rule Packs `ch.json` (Schweizerischer Mieterschutz, Auszug der paritätischen Tabelle, mit Varianten) + `generic.json` (als Schätzung markiert)
+- [x] `fair-share.ts` + Unit-Tests (`npm test`, 8 Tests)
+- [x] `inspection-agent.ts` + `/api/inspect` (SSE); E2E mit 4 Spike-Bildern + 3 Forderungen: 69 s, verifiziert, kein Fehlalarm im Kontrollbild, 2'900 → 391.50 CHF
+- [ ] Offen: Duplikate zwischen überlappenden Zoom-Kacheln (Agent verwirft sie selbst, kostet aber Calls) → Tag 5
 - [ ] Workshop "Agents 102: Verifiable Agents" (12:00 ET = 17:00 MEZ) anschauen → Erkenntnisse übernehmen
 
 ### Tag 4 (Do 29. Okt) — UI + End-to-End-Meilenstein

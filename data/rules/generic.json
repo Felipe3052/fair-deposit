@@ -1,0 +1,28 @@
+{
+  "id": "generic",
+  "name": "Generic — straight-line depreciation (estimate)",
+  "isEstimate": true,
+  "source": null,
+  "shareRule": "Estimate: tenant pays at most the depreciated value of a damaged component: replacement cost × (useful life − age) / useful life. Useful lives below are project assumptions, not legal values. Check your local law.",
+  "lifespans": [
+    { "component": "wall_paint", "years": 5, "label": "Interior paint (assumption)" },
+    { "component": "wallpaper", "years": 10, "label": "Wallpaper (assumption)" },
+    { "component": "carpet", "years": 8, "label": "Carpet (assumption)" },
+    { "component": "laminate", "years": 15, "label": "Laminate (assumption)" },
+    { "component": "vinyl", "years": 15, "label": "Vinyl / linoleum (assumption)" },
+    { "component": "parquet_finish", "years": 10, "label": "Wood floor refinish (assumption)" },
+    { "component": "parquet_solid", "years": 40, "label": "Solid wood floor (assumption)" },
+    { "component": "tiles", "years": 30, "label": "Ceramic tiles (assumption)" },
+    { "component": "kitchen_counter", "years": 20, "label": "Kitchen countertop (assumption)" },
+    { "component": "door", "years": 25, "label": "Interior door (assumption)" },
+    { "component": "window", "years": 30, "label": "Window (assumption)" },
+    { "component": "bathroom_fixture", "years": 25, "label": "Bathroom fixture (assumption)" },
+    { "component": "appliance", "years": 12, "label": "Kitchen appliance (assumption)" }
+  ],
+  "normalWearExamples": [
+    "light scuffs and faded paint",
+    "a few small nail holes",
+    "light wear on floors in walking paths",
+    "minor carpet wear from regular use"
+  ]
+}

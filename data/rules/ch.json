@@ -1,0 +1,51 @@
+{
+  "id": "ch",
+  "name": "Switzerland — joint lifespan table (HEV / MV)",
+  "isEstimate": false,
+  "source": {
+    "title": "Lebensdauertabelle (Auszug), paritätisch HEV Schweiz / Mieterinnen- und Mieterverband — via Schweizerischer Mieterschutz",
+    "url": "https://www.schweizerischer-mieterschutz.ch/mietrecht/lebensdauertabelle.html/53",
+    "retrieved": "2026-10-27",
+    "note": "Values cross-checked against excerpts quoted by mieterverband.ch (carpet 10) and press (paint 8, laminate 15, parquet 40, sealing 10, washbasin 35). The official current edition is sold by HEV/MV; differences are possible."
+  },
+  "shareRule": "Tenant pays the residual value of a damaged component: replacement cost × (lifespan − age) / lifespan. Nothing is owed once the lifespan has run out. Normal wear is covered by the rent.",
+  "lifespans": [
+    { "component": "wall_paint", "years": 8, "label": "Wall paint (dispersion / distemper)" },
+    { "component": "wall_paint", "variant": "acrylic", "years": 15, "label": "Wall paint (acrylic / alkyd / synthetic resin)" },
+    { "component": "wallpaper", "years": 10, "label": "Wallpaper, medium quality" },
+    { "component": "wallpaper", "variant": "good", "years": 15, "label": "Wallpaper, good quality" },
+    { "component": "wallpaper", "variant": "glass_fibre", "years": 20, "label": "Glass-fibre wallpaper" },
+    { "component": "carpet", "years": 10, "label": "Wall-to-wall carpet, medium quality" },
+    { "component": "carpet", "variant": "needle_felt", "years": 8, "label": "Carpet, needle felt / loop yarn" },
+    { "component": "laminate", "years": 15, "label": "Laminate, medium quality" },
+    { "component": "laminate", "variant": "low", "years": 10, "label": "Laminate, low quality" },
+    { "component": "laminate", "variant": "high", "years": 25, "label": "Laminate, high quality" },
+    { "component": "vinyl", "years": 20, "label": "PVC / linoleum / rubber floor" },
+    { "component": "parquet_finish", "years": 10, "label": "Parquet sealing / oiling" },
+    { "component": "parquet_solid", "years": 40, "label": "Solid / glued parquet" },
+    { "component": "parquet_solid", "variant": "veneer", "years": 12, "label": "Veneer parquet" },
+    { "component": "parquet_solid", "variant": "softwood", "years": 30, "label": "Softwood floorboards" },
+    { "component": "tiles", "years": 30, "label": "Ceramic tiles" },
+    { "component": "tiles", "variant": "porcelain", "years": 40, "label": "Porcelain stoneware / artificial stone tiles" },
+    { "component": "kitchen_counter", "years": 25, "label": "Countertop (stainless steel, granite, glass)" },
+    { "component": "kitchen_counter", "variant": "laminate", "years": 15, "label": "Countertop, synthetic resin surface" },
+    { "component": "kitchen_counter", "variant": "wood", "years": 20, "label": "Countertop, solid wood" },
+    { "component": "door", "years": 25, "label": "Door, wood composite / resin-coated" },
+    { "component": "door", "variant": "solid_wood", "years": 30, "label": "Door, solid wood" },
+    { "component": "door", "variant": "paint", "years": 20, "label": "Door paint (oil / synthetic resin)" },
+    { "component": "window", "years": 25, "label": "Window (plastic / wood / wood-metal)" },
+    { "component": "bathroom_fixture", "years": 35, "label": "Washbasin / WC, ceramic" },
+    { "component": "bathroom_fixture", "variant": "bathtub_acrylic", "years": 25, "label": "Bathtub / shower tray, acrylic" },
+    { "component": "bathroom_fixture", "variant": "fittings", "years": 20, "label": "Mixer tap, chrome-plated" },
+    { "component": "bathroom_fixture", "variant": "joint_sealant", "years": 8, "label": "Joint sealant" },
+    { "component": "appliance", "years": 15, "label": "Oven / cooktop / dishwasher" },
+    { "component": "appliance", "variant": "fridge", "years": 10, "label": "Refrigerator" },
+    { "component": "appliance", "variant": "extractor", "years": 10, "label": "Extractor hood" }
+  ],
+  "normalWearExamples": [
+    "light scuffs and faded paint from normal living",
+    "small nail holes from hanging pictures in normal number",
+    "light traces of use on floors along walking paths",
+    "slight discoloration where furniture stood"
+  ]
+}
