@@ -13,7 +13,7 @@ Bewertung (Stage 2, 0–10): Impact 30% · Meta-Tooling 25% · Demo 25% · Techn
 ### Tag 1 (Mo 26. Okt) — Fundament ✅
 - [x] Projekt-Struktur, Doku, Plan
 - [x] $150 Model API Credits erhalten, API Key eingerichtet
-- [x] Repo auf GitHub (privat): https://github.com/Felipe3052/ai-interior-designer
+- [x] Repo auf GitHub (privat): https://github.com/Felipe3052/fair-deposit
 - [x] Agent-Kern (meta-client, Tool-Loop, SSE-Route) — wird im Pivot wiederverwendet
 
 ### Tag 2 (Di 27. Okt) — Pivot + Machbarkeits-Spike ✅
