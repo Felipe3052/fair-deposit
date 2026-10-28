@@ -1,4 +1,4 @@
-import { MODEL_SPARK, metaClient } from "@/lib/meta-client";
+import { visionModel } from "@/lib/meta-client";
 import { cropRegion, type NormalizedImage } from "@/lib/images";
 import { computeShares, type Lifespan, type ShareInput, type ShareLine, type ShareTotals } from "@/lib/fair-share";
 import { parseJsonLoose } from "@/lib/agent/tools/inspect-photo";
@@ -10,8 +10,9 @@ import type { Finding, InspectionRequest } from "@/lib/agent/types";
  */
 export async function reviewFinding(finding: Finding, image: NormalizedImage): Promise<{ confirmed: boolean; reason: string }> {
   const { crop } = await cropRegion(image, finding.box, 0.4);
-  const res = await metaClient().chat.completions.create({
-    model: MODEL_SPARK,
+  const { client, model } = visionModel();
+  const res = await client.chat.completions.create({
+    model,
     max_tokens: 3000,
     messages: [{
       role: "user",

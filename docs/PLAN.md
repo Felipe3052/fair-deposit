@@ -22,7 +22,7 @@ Bewertung (Stage 2, 0–10): Impact 30% · Meta-Tooling 25% · Demo 25% · Techn
 - [x] Spike: Spark erkennt Schäden ohne Fehlalarm, SAM-Masken mit Hybrid-Strategie (`scripts/spike/`)
 - [x] POSITIONING, ARCHITECTURE, PLAN umgeschrieben
 - [ ] Interior-Stand als Rückfallpunkt committen
-- [ ] **Baseten-Credits beantragen** (nur 2'000 Plätze, für Open-Weight-Bonus), optional Modal
+- [x] **Baseten-Credits beantragt und erhalten** (28. Okt)
 - [ ] Repo umbenennen (z.B. `fair-deposit`) — vor dem Public-Schalten
 
 ### Tag 3 (Mi 28. Okt) — Backend: Inspektions-Agent ✅ (27. Okt abends vorgezogen)
@@ -59,7 +59,7 @@ Bewertung (Stage 2, 0–10): Impact 30% · Meta-Tooling 25% · Demo 25% · Techn
 ### Tag 7 (So 1. Nov) — Puffer + Bonus
 - [ ] UI-Polish, Ladezustände, "Not legal advice"-Hinweis
 - [ ] Deployment (Vercel) → öffentlicher Demo-Link; Demo-Ergebnisse cachen
-- [ ] Optional Open-Weight-Bonus: Inspektions-Pass auf `muse-spark-open-1026` (Baseten/Modal) per Env-Flag
+- [x] Open-Weight-Bonus (vorgezogen auf 28. Okt): `OPEN_WEIGHTS=1` (Vision-Pässe) bzw. `=all` (ganzer Agent) auf `meta-models/muse-spark-open-1026` über Baseten. Demo identisch zu hosted: 3 bestätigte Befunde, 2'900 → 391.50, verifiziert, 75–84 s statt 69 s. Default für Demo und Video: `OPEN_WEIGHTS=all`
 
 ### Tag 8–9 (Mo 2. – Di 3. Nov) — Härtung + Public
 - [ ] Mehrere Durchläufe, Randfälle, Ladezeiten

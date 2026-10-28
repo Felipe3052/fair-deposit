@@ -30,5 +30,5 @@
 | Offizielle Fassung und Lizenz der paritätischen Lebensdauertabelle — darf sie in Werten übernommen und zitiert werden? | mittel | Tag 3 |
 | Wie zuverlässig ist der Einzug-vs-Auszug-Vergleich bei unterschiedlichem Blickwinkel/Licht? | mittel | Tag 5 |
 | Unterstützt die SAM-3.1-API Video (Parser kann es)? Nur relevant für Stretch Goal | niedrig | bei Bedarf |
-| Läuft der Inspektions-Pass mit Muse Spark Open in vergleichbarer Qualität (Open-Weight-Bonus)? Abhängig von Baseten/Modal-Credits | mittel | Tag 7 |
+| ✅ Läuft der Inspektions-Pass mit Muse Spark Open in vergleichbarer Qualität? **Ja** (28. Okt): ganzer Agent auf Open Weights liefert dasselbe Demo-Ergebnis | — | erledigt |
 | Name "Fair Deposit": Kollision mit bestehenden Produkten/Marken? | niedrig | vor dem Public-Schalten (3. Nov) |

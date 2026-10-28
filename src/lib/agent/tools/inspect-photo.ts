@@ -1,4 +1,4 @@
-import { MODEL_SPARK, metaClient } from "@/lib/meta-client";
+import { visionModel } from "@/lib/meta-client";
 import { boxFromNormalized, mapFromCrop, type NormalizedImage } from "@/lib/images";
 import { COMPONENT_TYPES, FINDING_CATEGORIES, type Box, type Finding } from "@/lib/agent/types";
 import type { RulePack } from "@/lib/rules";
@@ -37,8 +37,9 @@ export async function inspectPhoto(args: {
   pack: RulePack;
   region?: { box: Box; original: { width: number; height: number } };
 }): Promise<Omit<Finding, "id">[]> {
-  const res = await metaClient().chat.completions.create({
-    model: MODEL_SPARK,
+  const { client, model } = visionModel();
+  const res = await client.chat.completions.create({
+    model,
     max_tokens: INSPECT_MAX_TOKENS,
     messages: [{
       role: "user",

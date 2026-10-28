@@ -1,4 +1,4 @@
-import { MODEL_SPARK, SPARK_MAX_TOKENS, metaClient } from "@/lib/meta-client";
+import { MODEL_SAM, SPARK_MAX_TOKENS, agentModel, visionModel } from "@/lib/meta-client";
 import { normalizeImage, boxFromNormalized, coverage, cropRegion, iou, type NormalizedImage } from "@/lib/images";
 import { getRulePack } from "@/lib/rules";
 import { ageFromInstalledYear, computeShares, COMPONENT_TYPES, type ComponentType, type ShareInput, type ShareLine, type ShareTotals } from "@/lib/fair-share";
@@ -250,10 +250,10 @@ Start with inspect_photos.`,
       },
     ];
 
-    const client = metaClient();
+    const { client, model } = agentModel();
     for (let i = 0; i < MAX_ITERATIONS && !finished; i++) {
       const res = await client.chat.completions.create({
-        model: MODEL_SPARK,
+        model,
         max_tokens: SPARK_MAX_TOKENS,
         messages: messages as never,
         tools: AGENT_TOOLS as never,
@@ -403,6 +403,7 @@ Start with inspect_photos.`,
       verification: { passed: finished && finalIssues.length === 0, issues: finalIssues },
       agentSteps,
       modelCalls,
+      models: { agent: agentModel().model, vision: visionModel().model, segmentation: MODEL_SAM, openWeights: visionModel().openWeights || agentModel().openWeights },
       disclaimer: DISCLAIMER,
       createdAt: new Date().toISOString(),
     };

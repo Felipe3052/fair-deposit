@@ -115,6 +115,8 @@ export interface InspectionReport {
   verification: { passed: boolean; issues: string[] };
   agentSteps: AgentStep[];
   modelCalls: number;
+  /** Tatsächlich verwendete Modelle; openWeights = Muse Spark Open über Baseten */
+  models: { agent: string; vision: string; segmentation: string; openWeights: boolean };
   disclaimer: string;
   createdAt: string;
 }

@@ -21,7 +21,7 @@
 | Frontend + Backend | Next.js (App Router, TypeScript, Tailwind) — one service, API routes, SSE streaming of agent steps |
 | Agent, inspection, verification, letter | `muse-spark-1.3` (Meta Model API, tool calling + vision) |
 | Evidence masks | `sam-3.1` (Meta Model API, box and concept prompts) |
-| Optional | `muse-spark-open-1026` (open weights via Baseten/Modal) |
+| Open weights | `meta-models/muse-spark-open-1026` via Baseten: `OPEN_WEIGHTS=1` runs the vision passes, `OPEN_WEIGHTS=all` runs the whole agent on open weights. Same demo result as hosted (CHF 2,900 → 391.50, verified). |
 | Test/demo images | `muse-image-1.0` generates move-in/move-out image pairs with known damage (development only) |
 | Rules | Rule packs as JSON (`data/rules/`), e.g. Swiss joint lifespan table (cited) + generic depreciation (estimate) |
 

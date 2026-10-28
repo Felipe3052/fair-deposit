@@ -226,8 +226,17 @@ export default function InspectionApp() {
           </div>
         </div>
         <div className="flex flex-wrap gap-2 text-[11px] font-medium text-[#4d6450]">
-          <span className="rounded-full bg-white px-2.5 py-1 ring-1 ring-black/5">muse-spark-1.3 · agent + vision</span>
-          <span className="rounded-full bg-white px-2.5 py-1 ring-1 ring-black/5">sam-3.1 · evidence masks</span>
+          {/* Nach einem Lauf die tatsächlich verwendeten Modelle (Open Weights per Env-Flag) */}
+          {report && report.models.agent !== report.models.vision ? (
+            <>
+              <span className="rounded-full bg-white px-2.5 py-1 ring-1 ring-black/5">{report.models.agent.split("/").pop()} · agent</span>
+              <span className="rounded-full bg-white px-2.5 py-1 ring-1 ring-black/5">{report.models.vision.split("/").pop()} · vision</span>
+            </>
+          ) : (
+            <span className="rounded-full bg-white px-2.5 py-1 ring-1 ring-black/5">{report?.models.agent.split("/").pop() ?? "muse-spark-1.3"} · agent + vision</span>
+          )}
+          <span className="rounded-full bg-white px-2.5 py-1 ring-1 ring-black/5">{report?.models.segmentation ?? "sam-3.1"} · evidence masks</span>
+          {report?.models.openWeights && <span className="rounded-full bg-[#294b38] px-2.5 py-1 text-white">open weights via Baseten</span>}
         </div>
       </header>
 
