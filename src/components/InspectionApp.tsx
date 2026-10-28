@@ -56,6 +56,9 @@ function roomFromFileName(fileName: string): string {
 /** Raffung der aufgezeichneten Demo-Fahrt (echte Laufzeit ≈ 50–80 s); per ?speed=1 (Echtzeit) bis ?speed=10 übersteuerbar, z. B. fürs Video. */
 const REPLAY_SPEED = 3;
 
+/** Vercel nimmt max. 4.5 MB pro Request an; etwas Reserve für Header. */
+const MAX_PAYLOAD_BYTES = 4.3 * 1024 * 1024;
+
 let uid = 0;
 const nextKey = (prefix: string) => `${prefix}${++uid}`;
 
@@ -235,23 +238,24 @@ export default function InspectionApp({ configuredModels }: { configuredModels: 
     const effectiveMoveOut = moveOutDate || new Date().toISOString().slice(0, 10); // leer = heute (erst im Handler, nicht im Prerender)
     resetRun(effectiveMoveOut, false);
     try {
-      const res = await fetch("/api/inspect", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          rulePack: rulePackId,
-          currency,
-          tenancyStart,
-          moveOutDate: effectiveMoveOut,
-          components: components
-            .filter((c) => c.installedYear.length === 4) // unvollständige Jahre ignorieren statt Request scheitern lassen
-            .map((c) => ({ component: c.component, installedYear: Number(c.installedYear), ...(c.variant ? { variant: c.variant } : {}) })),
-          photos: photos.map((p, i) => ({ id: p.id, room: p.room.trim().slice(0, 60) || `Photo ${i + 1}`, kind: p.kind, imageBase64: p.dataUrl })),
-          landlordClaims: claims
-            .filter((c) => c.description.trim() && c.amount !== "" && Number.isFinite(Number(c.amount)))
-            .map((c) => ({ id: c.id, description: c.description.trim().slice(0, 200), amount: Number(c.amount) })),
-        }),
+      const payload = JSON.stringify({
+        rulePack: rulePackId,
+        currency,
+        tenancyStart,
+        moveOutDate: effectiveMoveOut,
+        components: components
+          .filter((c) => c.installedYear.length === 4) // unvollständige Jahre ignorieren statt Request scheitern lassen
+          .map((c) => ({ component: c.component, installedYear: Number(c.installedYear), ...(c.variant ? { variant: c.variant } : {}) })),
+        photos: photos.map((p, i) => ({ id: p.id, room: p.room.trim().slice(0, 60) || `Photo ${i + 1}`, kind: p.kind, imageBase64: p.dataUrl })),
+        landlordClaims: claims
+          .filter((c) => c.description.trim() && c.amount !== "" && Number.isFinite(Number(c.amount)))
+          .map((c) => ({ id: c.id, description: c.description.trim().slice(0, 200), amount: Number(c.amount) })),
       });
+      // Hosting-Grenze (Vercel: 4.5 MB pro Request) verständlich melden statt kryptisch scheitern
+      if (payload.length > MAX_PAYLOAD_BYTES) {
+        throw new Error(`These photos are too large for one inspection (${(payload.length / 1024 / 1024).toFixed(1)} MB, max. ${(MAX_PAYLOAD_BYTES / 1024 / 1024).toFixed(1)} MB). Remove a few photos and try again.`);
+      }
+      const res = await fetch("/api/inspect", { method: "POST", headers: { "Content-Type": "application/json" }, body: payload });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         const details = body.details ? Object.entries(body.details as Record<string, string[]>).map(([k, v]) => `${k}: ${v.join(", ")}`).join("; ") : "";

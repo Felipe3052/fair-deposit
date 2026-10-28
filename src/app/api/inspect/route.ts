@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { inspectionRequestSchema } from "@/lib/agent/types";
 import { runInspectionAgent } from "@/lib/agent/inspection-agent";
+import { checkRunLimit } from "@/lib/rate-limit";
 
 // Bis zu 12 Fotos à 10 MB als Base64 (+33%)
 const MAX_BODY_BYTES = 12 * 14 * 1024 * 1024;
@@ -40,6 +41,10 @@ export async function POST(req: NextRequest) {
   if (new Set(request.photos.map((p) => p.id)).size !== request.photos.length) {
     return Response.json({ error: "Photo ids must be unique." }, { status: 400 });
   }
+  // Erst nach der Validierung zählen: ungültige Requests verbrauchen kein Kontingent
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || req.headers.get("x-real-ip") || "local";
+  const allowed = checkRunLimit(ip);
+  if (!allowed.ok) return Response.json({ error: allowed.message }, { status: 429 });
 
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
