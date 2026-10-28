@@ -2,7 +2,9 @@
 
 > *"Every renter dreads move-out day. Fair Deposit is an AI agent built on Meta's models: it inspects your photos, separates normal wear from real damage, proves every finding with a SAM 3.1 mask, and calculates what you actually owe under your local depreciation rules — then drafts your reply to the landlord."*
 
-**Status:** in development during the hackathon (Oct 26 – Nov 4, 2026). The project pivoted on Oct 27 from an AI interior designer; the code in `src/` is being rebuilt step by step (see [docs/PLAN.md](docs/PLAN.md)). Working title, name not final.
+**Live demo:** https://fair-deposit-73nv.vercel.app — click *Watch the agent inspect an apartment* for a recorded run (no wait), or upload your own move-in and move-out photos for a live inspection (rate-limited to protect the API budget).
+
+**Status:** built during the hackathon (Oct 26 – Nov 4, 2026); see [docs/PLAN.md](docs/PLAN.md).
 
 *Not legal advice.* The app gives an estimate with cited sources; generic rule packs are explicitly marked as estimates.
 
