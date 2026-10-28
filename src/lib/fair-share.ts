@@ -35,7 +35,7 @@ export interface ShareInput {
   component: ComponentType;
   variant?: string | null;
   /** Klassifikation der verknüpften, bestätigten Befunde */
-  findingClassifications: ("normal_wear" | "damage")[];
+  findingClassifications: ("normal_wear" | "damage" | "pre_existing")[];
   findingIds: string[];
   /** Alter des Bauteils in Jahren; null = unbekannt */
   ageYears: number | null;
@@ -43,6 +43,7 @@ export interface ShareInput {
 
 export type ShareStatus =
   | "normal_wear"   // nur Abnutzung → Mieter zahlt nichts
+  | "pre_existing"  // Schaden war laut Einzugsfotos schon da → Mieter zahlt nichts
   | "damage"        // Schaden, Restwert berechnet
   | "no_evidence"   // Forderung ohne belegten Befund
   | "age_unknown"   // Schaden, aber Alter fehlt
@@ -86,6 +87,14 @@ export function computeShareLine(input: ShareInput, lifespans: Lifespan[]): Shar
       ...base,
       status: "no_evidence",
       explanation: "No confirmed finding in the photos supports this claim. Ask the landlord for evidence.",
+    };
+  }
+  if (!input.findingClassifications.includes("damage") && input.findingClassifications.includes("pre_existing")) {
+    return {
+      ...base,
+      tenantPays: 0,
+      status: "pre_existing",
+      explanation: "This damage is already visible in the move-in photos. The tenant is not liable for it.",
     };
   }
   if (!input.findingClassifications.includes("damage")) {

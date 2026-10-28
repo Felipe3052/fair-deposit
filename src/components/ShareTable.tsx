@@ -17,6 +17,7 @@ const fixInputClass = "rounded-lg border border-[#e6d49a] bg-[#fffaf0] px-2 py-1
 const STATUS: Record<ShareLine["status"], { label: string; className: string }> = {
   damage: { label: "damage", className: "bg-[#fdebe2] text-[#b13d0c]" },
   normal_wear: { label: "normal wear", className: "bg-[#fbf3d9] text-[#8a6a08]" },
+  pre_existing: { label: "already at move-in", className: "bg-[#e6eefb] text-[#2f5aa8]" },
   no_evidence: { label: "no evidence", className: "bg-[#eef2eb] text-[#4d6450]" },
   age_unknown: { label: "age needed", className: "bg-[#eef0f6] text-[#4b5a86]" },
   lifespan_unknown: { label: "not in table", className: "bg-[#eef0f6] text-[#4b5a86]" },
@@ -136,7 +137,7 @@ function LineFixer({
   const variants = lifespans.filter((l) => l.component === line.component && l.variant);
   const standard = lifespans.find((l) => l.component === line.component && !l.variant);
   return (
-    <div className="mt-2 flex flex-wrap items-center gap-1.5">
+    <div className="mt-2 flex flex-wrap items-center gap-1.5 print:hidden">
       {line.status === "lifespan_unknown" ? (
         <select value="" onChange={(e) => onFix({ component: e.target.value as ComponentType })} className={fixInputClass} aria-label="Which component is this?">
           <option value="" disabled>Which component is this?</option>

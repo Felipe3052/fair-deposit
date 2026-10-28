@@ -43,12 +43,15 @@ Bewertung (Stage 2, 0–10): Impact 30% · Meta-Tooling 25% · Demo 25% · Techn
 - [x] **E2E im Browser:** Demo-Wohnung, verifiziert, 2'900 → 391.50 CHF; `npm run build` grün
 - [x] **Maskenqualität** (direkt nachgezogen): SAM-Konzept-Prompts nur mit kurzen Nomen ("drawing", "scratches" statt Sparks Satz-Label → vorher 0 Masken), mehrere Begriffe parallel + Instanzen zusammengeführt; dünne Schäden (Kratzer, Kritzeleien, Risse) nie mehr per Box-Prompt (griff Sofa / ganzen Boden). Kritzeleien und Kratzer jetzt einzeln maskiert.
 
-### Tag 5 (Fr 30. Okt) — Verifikation + Agent-Tiefe
-- [ ] `verify-report.ts`: Code-Checks + Spark-Gegenprüfung auf Crops, Agent iteriert bei Fehlern
-- [ ] `compare-move-in.ts`: Einzug-vs-Auszug ("war schon da")
-- [ ] `draft-letter.ts` + Export (Markdown/PDF)
-- [ ] Demo-Datensatz: 2–3 Wohnungen als Einzug/Auszug-Paare (Muse Image, `generate-damage.mjs` erweitern) + echte freie Fotos; Fehlalarm-Rate prüfen
-- [ ] Fehlerfälle: unscharfes Foto, keine Befunde, API-Fehler, zu viele Bilder
+### Tag 5 (Fr 30. Okt) — Verifikation + Agent-Tiefe ✅ (vorgezogen auf 28. Okt)
+- [x] `verify-report.ts`: Code-Checks + Gegenprüfung auf Crops, Agent iteriert bei Fehlern (seit Tag 3); neu: Einzugsvergleich wird verlangt, wo Einzugsfotos existieren; Prüf-Prompt spekuliert nicht mehr über "Aufkleber"
+- [x] Duplikate über Zoom-Kacheln: Teilstücke gleicher Kategorie, die sich berühren, werden zu einer Box vereinigt
+- [x] `compare-move-in.ts`: Einzug vs. Auszug (Raum-Zuordnung über den Namen vor " — "), Status `pre_existing` → Mieter zahlt 0; vorbestehende Befunde dürfen nicht verworfen werden (stärkstes Argument)
+- [x] UI: Einzug/Auszug-Schalter pro Foto, **Vorher/Nachher-Panel** beim Klick auf einen verglichenen Befund
+- [x] `lib/letter.ts` + LetterPanel: Antwortbrief deterministisch aus dem Report (kopieren, .md, Beweisbericht als PDF über Druckdialog)
+- [x] **Aufgezeichnete Demo-Fahrt** (`scripts/record-demo-run.mjs` → `public/demo/recorded-run.json`, "▶ Watch demo run", als Replay gekennzeichnet, 3× gerafft) — Video/Pitch ohne API-Risiko
+- [x] Demo-Story: Einzugsfoto mit schon zerkratztem Parkett → 2'900 → 247.50 CHF (Loch + Kritzeleien neu, Parkett "already at move-in", Küche ohne Beleg), verifiziert, ganz auf Open Weights
+- [ ] Offen: echte Fotos (Nutzer) als zweites Demo-Set; Fehlerfälle (unscharfes Foto, keine Befunde, API-Fehler)
 
 ### Tag 6 (Sa 31. Okt) — Demo-Video + README
 - [ ] Storyboard (siehe Demo-Checkliste), englisch

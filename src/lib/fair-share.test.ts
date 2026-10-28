@@ -69,3 +69,14 @@ test("Alter aus Einbaujahr", () => {
   assert.equal(ageFromInstalledYear(2020, "2026-01-15"), 6);
   assert.equal(ageFromInstalledYear(2030, "2026-01-15"), 0);
 });
+
+test("Schaden schon beim Einzug sichtbar → nichts zu zahlen", () => {
+  const line = computeShareLine({ ...base, findingClassifications: ["pre_existing"], findingIds: ["f1"], ageYears: 2 }, lifespans);
+  assert.equal(line.status, "pre_existing");
+  assert.equal(line.tenantPays, 0);
+});
+
+test("Neuer Schaden neben vorbestehendem → Restwert wird berechnet", () => {
+  const line = computeShareLine({ ...base, findingClassifications: ["pre_existing", "damage"], findingIds: ["f1", "f2"], ageYears: 4 }, lifespans);
+  assert.equal(line.status, "damage");
+});

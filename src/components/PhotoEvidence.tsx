@@ -6,10 +6,12 @@ export const FINDING_COLORS = {
   damage: "#d9480f",
   normal_wear: "#c99a12",
   rejected: "#9aa39b",
+  pre_existing: "#2f6fd6",
 } as const;
 
 export function findingColor(f: Finding): string {
   if (f.status === "rejected") return FINDING_COLORS.rejected;
+  if (f.moveIn?.verdict === "pre_existing") return FINDING_COLORS.pre_existing;
   return f.classification === "damage" ? FINDING_COLORS.damage : FINDING_COLORS.normal_wear;
 }
 

@@ -72,6 +72,13 @@ export interface Evidence {
   samConfidence: number | null;
 }
 
+/** Ergebnis des Einzug-Auszug-Vergleichs für einen Schaden. */
+export interface MoveInComparison {
+  verdict: "pre_existing" | "new" | "unclear";
+  moveInPhotoId: string | null;
+  reason: string;
+}
+
 export interface Finding {
   id: string;
   photoId: string;
@@ -88,6 +95,8 @@ export interface Finding {
   evidence?: Evidence;
   /** Ergebnis der Vision-Gegenprüfung */
   review?: { confirmed: boolean; reason: string };
+  /** Vergleich mit den Einzugsfotos desselben Raums */
+  moveIn?: MoveInComparison;
   status: "pending" | "confirmed" | "unconfirmed" | "rejected";
 }
 

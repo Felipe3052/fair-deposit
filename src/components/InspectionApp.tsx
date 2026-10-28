@@ -2,6 +2,9 @@
 
 import { useMemo, useRef, useState } from "react";
 import AgentSteps from "@/components/AgentSteps";
+import BeforeAfter from "@/components/BeforeAfter";
+import LetterPanel from "@/components/LetterPanel";
+import { buildLetter } from "@/lib/letter";
 import FindingList from "@/components/FindingList";
 import PhotoEvidence from "@/components/PhotoEvidence";
 import ShareTable, { COMPONENT_LABELS, type LineFix } from "@/components/ShareTable";
@@ -10,7 +13,7 @@ import { ageFromInstalledYear, computeShares, type ShareInput } from "@/lib/fair
 import { getRulePack, type RulePack } from "@/lib/rules";
 import { COMPONENT_TYPES, type AgentStep, type ComponentType, type Finding, type InspectionEvent, type InspectionReport, type ShareLine, type ShareTotals } from "@/lib/agent/types";
 
-interface Photo { id: string; room: string; dataUrl: string; width: number; height: number }
+interface Photo { id: string; room: string; kind: "move_out" | "move_in"; dataUrl: string; width: number; height: number }
 interface Claim { id: string; description: string; amount: string }
 interface ComponentAge { key: string; component: ComponentType; variant: string; installedYear: string }
 
@@ -18,15 +21,17 @@ type Phase = "setup" | "running" | "done" | "error";
 
 const DEMO = {
   photos: [
-    { file: "living-room-wall.jpg", room: "Living room — wall" },
-    { file: "living-room-floor.jpg", room: "Living room — floor" },
-    { file: "living-room-back-wall.jpg", room: "Living room — back wall" },
-    { file: "living-room-overview.jpg", room: "Living room — overview" },
+    { id: "demo-wall", file: "living-room-wall.jpg", room: "Living room — wall", kind: "move_out" as const },
+    { id: "demo-floor", file: "living-room-floor.jpg", room: "Living room — floor", kind: "move_out" as const },
+    { id: "demo-back-wall", file: "living-room-back-wall.jpg", room: "Living room — back wall", kind: "move_out" as const },
+    { id: "demo-overview", file: "living-room-overview.jpg", room: "Living room — overview", kind: "move_out" as const },
+    // Einzug: Boden schon zerkratzt, Wände sauber → Parkett-Forderung entfällt
+    { id: "demo-move-in", file: "living-room-move-in.jpg", room: "Living room", kind: "move_in" as const },
   ],
   claims: [
-    { description: "Repaint living room walls (hole, drawings)", amount: "900" },
-    { description: "Sand and reseal parquet floor", amount: "1200" },
-    { description: "Replace kitchen countertop", amount: "800" },
+    { id: "c1", description: "Repaint living room walls (hole, drawings)", amount: "900" },
+    { id: "c2", description: "Sand and reseal parquet floor", amount: "1200" },
+    { id: "c3", description: "Replace kitchen countertop", amount: "800" },
   ],
   components: [
     { component: "wall_paint" as const, installedYear: "2021" },
@@ -47,6 +52,9 @@ function roomFromFileName(fileName: string): string {
   if (GENERIC_FILE_NAME.test(base)) return "";
   return base.replace(/[-_]+/g, " ").replace(/\s+/g, " ").slice(0, 60);
 }
+
+/** Raffung der aufgezeichneten Demo-Fahrt (echte Laufzeit ≈ 80 s). */
+const REPLAY_SPEED = 3;
 
 let uid = 0;
 const nextKey = (prefix: string) => `${prefix}${++uid}`;
@@ -72,18 +80,21 @@ export default function InspectionApp() {
   const [edited, setEdited] = useState(false);
   const [runMoveOut, setRunMoveOut] = useState("");
   const [focusPhotoId, setFocusPhotoId] = useState<string | null>(null);
+  const [replay, setReplay] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
 
   const pack = getRulePack(rulePackId);
   const photoRooms = useMemo(() => Object.fromEntries(photos.map((p) => [p.id, p.room])), [photos]);
   const findingList = Object.values(findings);
+  const activeFinding = activeId ? findings[activeId] : undefined;
+  const activeMoveOut = activeFinding ? photos.find((p) => p.id === activeFinding.photoId) : undefined;
 
   async function addFiles(files: FileList | File[]) {
     setLoadingPhotos(true);
     try {
       const prepared = await Promise.all([...files].filter((f) => f.type.startsWith("image/")).map(async (file) => {
         const p = await preparePhoto(file);
-        return { id: nextKey("p"), room: roomFromFileName(file.name), ...p };
+        return { id: nextKey("p"), room: roomFromFileName(file.name), kind: "move_out" as const, ...p };
       }));
       setPhotos((prev) => [...prev, ...prepared].slice(0, 12));
       setFocusPhotoId(prepared.find((p) => !p.room)?.id ?? null);
@@ -95,12 +106,12 @@ export default function InspectionApp() {
   async function loadDemo() {
     setLoadingPhotos(true);
     try {
-      const prepared = await Promise.all(DEMO.photos.map(async ({ file, room }) => {
+      const prepared = await Promise.all(DEMO.photos.map(async ({ id, file, room, kind }) => {
         const blob = await (await fetch(`/demo/${file}`)).blob();
-        return { id: nextKey("p"), room, ...(await preparePhoto(blob)) };
+        return { id, room, kind, ...(await preparePhoto(blob)) };
       }));
       setPhotos(prepared);
-      setClaims(DEMO.claims.map((c) => ({ id: nextKey("c"), ...c })));
+      setClaims(DEMO.claims.map((c) => ({ ...c })));
       setComponents(DEMO.components.map((c) => ({ key: nextKey("k"), variant: "", ...c })));
       setRulePackId("ch");
       setCurrency("CHF");
@@ -150,18 +161,64 @@ export default function InspectionApp() {
     setEdited(true);
   }
 
-  async function run() {
+  function resetRun(effectiveMoveOut: string, isReplay: boolean) {
     setPhase("running");
     setSteps([]);
     setFindings({});
     setShare(null);
     setEdited(false);
-    const effectiveMoveOut = moveOutDate || new Date().toISOString().slice(0, 10); // leer = heute (erst im Handler, nicht im Prerender)
     setRunMoveOut(effectiveMoveOut);
     setVerification(null);
     setReport(null);
     setError(null);
     setActiveId(null);
+    setReplay(isReplay);
+  }
+
+  /** Ein SSE-Event in den UI-Zustand übernehmen; true = Lauf beendet. */
+  function handleEvent(ev: InspectionEvent): boolean {
+    if (ev.type === "step") setSteps((prev) => [...prev, { tool: ev.tool, summary: ev.summary, at: new Date().toISOString() }]);
+    else if (ev.type === "finding") setFindings((prev) => ({ ...prev, [ev.data.id]: ev.data }));
+    else if (ev.type === "share") setShare({ lines: ev.lines, totals: ev.totals });
+    else if (ev.type === "verification") setVerification({ passed: ev.passed, issues: ev.issues });
+    else if (ev.type === "done") {
+      setReport(ev.data);
+      setVerification(ev.data.verification);
+      if (ev.data.lines.length) setShare({ lines: ev.data.lines, totals: ev.data.totals });
+      setPhase("done");
+      return true;
+    } else if (ev.type === "error") {
+      setError(ev.message);
+      setPhase("error");
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * Aufgezeichneter echter Lauf (scripts/record-demo-run.mjs) für Video und Live-Demo:
+   * gleiche Events, zeitlich gerafft, ohne API-Wartezeit. In der UI als Replay gekennzeichnet.
+   */
+  async function playRecording() {
+    await loadDemo();
+    try {
+      const recording = (await (await fetch("/demo/recorded-run.json")).json()) as { moveOutDate: string; events: { t: number; event: InspectionEvent }[] };
+      resetRun(recording.moveOutDate, true);
+      let last = 0;
+      for (const { t, event } of recording.events) {
+        await new Promise((r) => setTimeout(r, Math.min(2200, Math.max(0, (t - last) / REPLAY_SPEED))));
+        last = t;
+        if (handleEvent(event)) break;
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+      setPhase("error");
+    }
+  }
+
+  async function run() {
+    const effectiveMoveOut = moveOutDate || new Date().toISOString().slice(0, 10); // leer = heute (erst im Handler, nicht im Prerender)
+    resetRun(effectiveMoveOut, false);
     try {
       const res = await fetch("/api/inspect", {
         method: "POST",
@@ -174,7 +231,7 @@ export default function InspectionApp() {
           components: components
             .filter((c) => c.installedYear.length === 4) // unvollständige Jahre ignorieren statt Request scheitern lassen
             .map((c) => ({ component: c.component, installedYear: Number(c.installedYear), ...(c.variant ? { variant: c.variant } : {}) })),
-          photos: photos.map((p, i) => ({ id: p.id, room: p.room.trim().slice(0, 60) || `Photo ${i + 1}`, kind: "move_out", imageBase64: p.dataUrl })),
+          photos: photos.map((p, i) => ({ id: p.id, room: p.room.trim().slice(0, 60) || `Photo ${i + 1}`, kind: p.kind, imageBase64: p.dataUrl })),
           landlordClaims: claims
             .filter((c) => c.description.trim() && c.amount !== "" && Number.isFinite(Number(c.amount)))
             .map((c) => ({ id: c.id, description: c.description.trim().slice(0, 200), amount: Number(c.amount) })),
@@ -187,21 +244,7 @@ export default function InspectionApp() {
       }
       let finished = false;
       await readEventStream<InspectionEvent>(res, (ev) => {
-        if (ev.type === "step") setSteps((prev) => [...prev, { tool: ev.tool, summary: ev.summary, at: new Date().toISOString() }]);
-        else if (ev.type === "finding") setFindings((prev) => ({ ...prev, [ev.data.id]: ev.data }));
-        else if (ev.type === "share") setShare({ lines: ev.lines, totals: ev.totals });
-        else if (ev.type === "verification") setVerification({ passed: ev.passed, issues: ev.issues });
-        else if (ev.type === "done") {
-          finished = true;
-          setReport(ev.data);
-          setVerification(ev.data.verification);
-          if (ev.data.lines.length) setShare({ lines: ev.data.lines, totals: ev.data.totals });
-          setPhase("done");
-        } else if (ev.type === "error") {
-          finished = true;
-          setError(ev.message);
-          setPhase("error");
-        }
+        if (handleEvent(ev)) finished = true;
       });
       if (!finished) throw new Error("The connection ended before the report was complete.");
     } catch (err) {
@@ -260,9 +303,14 @@ export default function InspectionApp() {
           <section className="rounded-3xl bg-white/70 p-5 ring-1 ring-black/5">
             <div className="mb-4 flex items-center justify-between">
               <h3 className="font-semibold text-[#2c3a30]">1 · Move-out photos</h3>
-              <button type="button" onClick={loadDemo} disabled={loadingPhotos} className="text-sm font-medium text-[#294b38] underline underline-offset-4 disabled:opacity-50">
-                Load demo apartment
-              </button>
+              <div className="flex items-center gap-4">
+                <button type="button" onClick={loadDemo} disabled={loadingPhotos} className="text-sm font-medium text-[#294b38] underline underline-offset-4 disabled:opacity-50">
+                  Load demo apartment
+                </button>
+                <button type="button" onClick={playRecording} disabled={loadingPhotos} className="rounded-full bg-[#294b38] px-3 py-1 text-sm font-medium text-white disabled:opacity-50">
+                  ▶ Watch demo run
+                </button>
+              </div>
             </div>
             <div
               onDragOver={(e) => e.preventDefault()}
@@ -283,8 +331,18 @@ export default function InspectionApp() {
               <ul className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
                 {photos.map((p) => (
                   <li key={p.id} className="overflow-hidden rounded-xl bg-white ring-1 ring-black/5">
-                    {/* eslint-disable-next-line @next/next/no-img-element -- lokale data URL */}
-                    <img src={p.dataUrl} alt={p.room} className="aspect-[4/3] w-full object-cover" />
+                    <div className="relative">
+                      {/* eslint-disable-next-line @next/next/no-img-element -- lokale data URL */}
+                      <img src={p.dataUrl} alt={p.room} className="aspect-[4/3] w-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => setPhotos((prev) => prev.map((x) => (x.id === p.id ? { ...x, kind: x.kind === "move_out" ? "move_in" : "move_out" } : x)))}
+                        className={`absolute left-2 top-2 rounded-full px-2 py-0.5 text-[11px] font-semibold shadow-sm ${p.kind === "move_in" ? "bg-[#2f6fd6] text-white" : "bg-white/90 text-[#35443a]"}`}
+                        title="Switch between move-in and move-out photo"
+                      >
+                        {p.kind === "move_in" ? "Move-in" : "Move-out"}
+                      </button>
+                    </div>
                     <div className="flex items-center gap-1 p-2">
                       <input
                         value={p.room}
@@ -391,6 +449,7 @@ export default function InspectionApp() {
               )}
               <h2 className="text-2xl font-semibold text-[#202821]">
                 {phase === "running" ? "Inspecting your apartment …" : phase === "done" ? "Inspection report" : "Inspection stopped"}
+                {replay && <span className="ml-3 rounded-full bg-[#eef2eb] px-2 py-0.5 align-middle text-xs font-medium text-[#4d6450]">replay of a recorded run</span>}
               </h2>
               {verification && (
                 <p className={`mt-1 text-sm ${verification.passed ? "text-[#3f6b47]" : "text-[#8a6a08]"}`}>
@@ -400,7 +459,7 @@ export default function InspectionApp() {
               </div>
             </div>
             {phase !== "running" && (
-              <button type="button" onClick={() => setPhase("setup")} className="rounded-xl bg-white px-4 py-2 text-sm font-medium text-[#294b38] ring-1 ring-black/10 hover:bg-[#fafbf8]">
+              <button type="button" onClick={() => setPhase("setup")} className="rounded-xl bg-white px-4 py-2 text-sm font-medium text-[#294b38] ring-1 ring-black/10 hover:bg-[#fafbf8] print:hidden">
                 ← Edit inputs
               </button>
             )}
@@ -420,13 +479,28 @@ export default function InspectionApp() {
             />
           )}
 
-          <div className="grid gap-6 lg:grid-cols-[1.6fr_1fr]">
-            <div className="grid content-start gap-4 sm:grid-cols-2">
+          {activeFinding?.moveIn && activeMoveOut && (
+            <BeforeAfter
+              finding={activeFinding}
+              moveOut={activeMoveOut}
+              moveIn={photos.find((p) => p.id === activeFinding.moveIn?.moveInPhotoId) ?? null}
+              onClose={() => setActiveId(null)}
+            />
+          )}
+
+          <div className="grid gap-6 lg:grid-cols-[1.6fr_1fr] print:block">
+            <div className="grid content-start gap-4 sm:grid-cols-2 print:grid-cols-2">
               {photos.map((p) => (
-                <PhotoEvidence key={p.id} photo={p} findings={findingList.filter((f) => f.photoId === p.id)} activeId={activeId} onSelect={setActiveId} />
+                <PhotoEvidence
+                  key={p.id}
+                  photo={{ ...p, room: p.kind === "move_in" ? `${p.room} · move-in` : p.room }}
+                  findings={findingList.filter((f) => f.photoId === p.id)}
+                  activeId={activeId}
+                  onSelect={setActiveId}
+                />
               ))}
             </div>
-            <aside className="space-y-6 lg:sticky lg:top-6 lg:self-start">
+            <aside className="space-y-6 lg:sticky lg:top-6 lg:self-start print:hidden">
               <section className="rounded-3xl bg-white p-5 ring-1 ring-black/5">
                 <h3 className="mb-4 font-semibold text-[#2c3a30]">Agent steps</h3>
                 <AgentSteps steps={steps} running={phase === "running"} />
@@ -440,6 +514,20 @@ export default function InspectionApp() {
               )}
             </aside>
           </div>
+
+          {phase === "done" && share && (
+            <LetterPanel
+              key={`${report?.id}-${share.totals.tenantPays}-${share.totals.openLines}`}
+              initialText={buildLetter({
+                lines: share.lines,
+                totals: share.totals,
+                findings: findingList,
+                photoRooms,
+                rule: { name: pack.name, isEstimate: pack.isEstimate, title: pack.source?.title ?? null, url: pack.source?.url ?? null },
+                moveOutDate: runMoveOut,
+              })}
+            />
+          )}
         </div>
       )}
     </div>

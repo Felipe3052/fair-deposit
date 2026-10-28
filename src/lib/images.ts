@@ -84,3 +84,15 @@ export function coverage(a: Box, b: Box): number {
   const area = (a.right - a.left) * (a.bottom - a.top);
   return area === 0 ? 0 : (ix * iy) / area;
 }
+
+/** Verkleinerte Kopie mit rot markierter Box (für Vergleiche über mehrere Fotos, ein Bild ≈ 1024 px). */
+export async function markedPreview(image: NormalizedImage, box: Box | null, maxSide = 1024): Promise<NormalizedImage> {
+  const stroke = Math.max(4, Math.round(Math.max(image.width, image.height) / 200));
+  const overlay = box
+    ? [{
+        input: Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${image.width}" height="${image.height}"><rect x="${box.left}" y="${box.top}" width="${box.right - box.left}" height="${box.bottom - box.top}" fill="none" stroke="#ff2d2d" stroke-width="${stroke}" rx="${stroke * 2}"/></svg>`),
+      }]
+    : [];
+  const marked = await sharp(image.buffer).composite(overlay).jpeg({ quality: 88 }).toBuffer();
+  return toNormalized(sharp(marked).resize({ width: maxSide, height: maxSide, fit: "inside", withoutEnlargement: true }));
+}

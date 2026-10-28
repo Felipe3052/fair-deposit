@@ -45,6 +45,11 @@ export default function FindingList({
                 {photoRooms[f.photoId] ?? f.photoId} · {f.classification === "damage" ? "damage" : "normal wear"} · {f.severity}
                 {f.source === "zoom" && " · found by zooming in"}
               </span>
+              {f.moveIn && (
+                <span className={`mt-1 block text-xs font-medium ${f.moveIn.verdict === "pre_existing" ? "text-[#2f5aa8]" : f.moveIn.verdict === "new" ? "text-[#b13d0c]" : "text-[#758177]"}`}>
+                  {f.moveIn.verdict === "pre_existing" ? "Already there at move-in" : f.moveIn.verdict === "new" ? "New since move-in" : "Move-in photo inconclusive"} · click to compare
+                </span>
+              )}
               {f.review?.reason && (
                 <span className="mt-1 block text-xs leading-5 text-[#5f6d63]">“{f.review.reason}”</span>
               )}

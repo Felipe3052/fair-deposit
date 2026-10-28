@@ -4,6 +4,7 @@ import { getRulePack } from "@/lib/rules";
 import { ageFromInstalledYear, computeShares, COMPONENT_TYPES, type ComponentType, type ShareInput, type ShareLine, type ShareTotals } from "@/lib/fair-share";
 import { inspectPhoto } from "@/lib/agent/tools/inspect-photo";
 import { segmentFinding, type SegmentStrategy } from "@/lib/agent/tools/segment-finding";
+import { compareMoveIn } from "@/lib/agent/tools/compare-move-in";
 import { checkReport, reviewFinding } from "@/lib/agent/tools/verify-report";
 import type { AgentStep, Box, Finding, InspectionEvent, InspectionReport, InspectionRequest, PhotoMeta } from "@/lib/agent/types";
 
@@ -66,6 +67,18 @@ const AGENT_TOOLS = [
     function: {
       name: "review_findings",
       description: "Skeptical second-pass vision check of each finding on a close-up crop. Findings that are not confirmed are rejected automatically.",
+      parameters: {
+        type: "object",
+        properties: { finding_ids: { type: "array", items: { type: "string" } } },
+        required: ["finding_ids"],
+      },
+    },
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "compare_move_in",
+      description: "Compare confirmed damage findings with the tenant's move-in photos of the same room. Verdict per finding: pre_existing (already there at move-in → tenant owes nothing), new, or unclear. Only works for rooms that have move-in photos.",
       parameters: {
         type: "object",
         properties: { finding_ids: { type: "array", items: { type: "string" } } },
@@ -141,6 +154,31 @@ async function mapLimit<T, R>(items: T[], limit: number, fn: (item: T) => Promis
   return results;
 }
 
+/** Berühren oder überlappen sich zwei Boxen (mit kleinem Spielraum relativ zur Bildgrösse)? */
+function touches(a: Box, b: Box, gap: number): boolean {
+  return a.left - gap <= b.right && b.left - gap <= a.right && a.top - gap <= b.bottom && b.top - gap <= a.bottom;
+}
+
+const unionBox = (a: Box, b: Box): Box => ({
+  left: Math.min(a.left, b.left), top: Math.min(a.top, b.top), right: Math.max(a.right, b.right), bottom: Math.max(a.bottom, b.bottom),
+});
+
+/**
+ * Zoom-Kacheln überlappen sich: Ein Loch an der Kachelgrenze kommt als zwei Teilstücke zurück,
+ * von denen keines das andere enthält. Teilstücke gleicher Kategorie, die sich berühren, werden vereinigt.
+ */
+function mergeFragments(candidates: Omit<Finding, "id">[], photoById: Map<string, PhotoMeta>): Omit<Finding, "id">[] {
+  const merged: Omit<Finding, "id">[] = [];
+  for (const c of candidates) {
+    const photo = photoById.get(c.photoId);
+    const gap = photo ? Math.max(photo.width, photo.height) * 0.015 : 0;
+    const i = merged.findIndex((m) => m.photoId === c.photoId && m.category === c.category && m.classification === c.classification && touches(m.box, c.box, gap));
+    if (i < 0) merged.push(c);
+    else merged[i] = { ...(c.confidence > merged[i].confidence ? c : merged[i]), box: unionBox(merged[i].box, c.box) };
+  }
+  return merged;
+}
+
 function toNorm(box: Box, photo: PhotoMeta): number[] {
   return [
     Math.round((box.left / photo.width) * 1000),
@@ -185,11 +223,14 @@ export async function* runInspectionAgent(request: InspectionRequest): AsyncGene
     let counter = 0;
     const addFindings = (candidates: Omit<Finding, "id">[]): Finding[] => {
       const added: Finding[] = [];
-      for (const c of candidates) {
-        // Zoom-Boxen sind oft enger oder weiter als die Übersichts-Box → auch Enthaltensein zählt als Duplikat
+      for (const c of mergeFragments(candidates, photoById)) {
+        // Zoom-Boxen sind oft enger oder weiter als die Übersichts-Box → auch Enthaltensein und
+        // Berühren (gleiche Kategorie) zählen als Duplikat
+        const gap = Math.max(photoById.get(c.photoId)?.width ?? 0, photoById.get(c.photoId)?.height ?? 0) * 0.015;
         const duplicate = [...findings.values()].some((f) =>
           f.photoId === c.photoId && f.status !== "rejected" &&
-          (iou(f.box, c.box) > 0.3 || (f.category === c.category && Math.max(coverage(c.box, f.box), coverage(f.box, c.box)) > 0.6))
+          (iou(f.box, c.box) > 0.3 ||
+            (f.category === c.category && (Math.max(coverage(c.box, f.box), coverage(f.box, c.box)) > 0.6 || touches(f.box, c.box, gap))))
         );
         if (duplicate) continue;
         const f = applyStatus({ ...c, id: `f${++counter}` });
@@ -224,6 +265,13 @@ export async function* runInspectionAgent(request: InspectionRequest): AsyncGene
     };
 
     const moveOutPhotos = photos.filter((p) => p.kind === "move_out");
+    // Einzugsfotos über den Raumnamen zuordnen; "Living room — wall" gehört zu "Living room"
+    const roomKey = (room: string) => room.split(/\s[—–-]\s/)[0].trim().toLowerCase().replace(/\s+/g, " ");
+    const moveInFor = (photoId: string) => {
+      const room = photoById.get(photoId)?.room;
+      return room ? photos.filter((p) => p.kind === "move_in" && roomKey(p.room) === roomKey(room)) : [];
+    };
+    const roomsWithMoveIn = [...new Set(photos.filter((p) => p.kind === "move_in").map((p) => p.room))];
     const messages: Record<string, unknown>[] = [
       {
         role: "system",
@@ -234,6 +282,7 @@ Workflow:
 2. For overview photos of whole rooms, use zoom_region (grid=true or a region) where small defects could hide — walls where pictures hung, floors in walking paths, corners, door frames. Skip zooming into close-ups.
 3. segment_findings for every damage finding (choose the strategy per damage type).
 4. review_findings for every damage finding. Rejected findings stay out of the report.
+4b. compare_move_in for every confirmed damage finding in a room with move-in photos. Damage that was already there at move-in is not the tenant's responsibility — but do NOT reject it: link it in compute_share like any other finding; the line then shows "already at move-in" and costs the tenant nothing. That is the tenant's strongest argument.
 5. compute_share: one line per landlord claim, linking only confirmed findings for the same component; a claim without supporting findings gets finding_ids []. Add lines (claim_id null) for confirmed damage without a claim.
 6. verify_report. If issues remain, fix them (segment, review, reject, recompute) and verify again.
 7. finish right after a clean verify_report.
@@ -245,6 +294,7 @@ Tenancy: ${request.tenancyStart} to ${request.moveOutDate}.`,
       {
         role: "user",
         content: `Move-out photos: ${moveOutPhotos.map((p) => `${p.id} (${p.room})`).join(", ")}
+Move-in photos (only for compare_move_in): ${roomsWithMoveIn.length ? photos.filter((p) => p.kind === "move_in").map((p) => `${p.id} (${p.room})`).join(", ") : "none"}
 Landlord claims: ${request.landlordClaims.length ? request.landlordClaims.map((c) => `${c.id}: "${c.description}" ${c.amount} ${request.currency}`).join("; ") : "none — report damage and normal wear only"}
 Start with inspect_photos.`,
       },
@@ -336,10 +386,30 @@ Start with inspect_photos.`,
           const rejected = reviewed.filter((f) => f.status === "rejected");
           yield step("review_findings", `${reviewed.length - rejected.length} confirmed, ${rejected.length} rejected${rejected.length ? `: ${rejected.map((f) => f.label).join(", ")}` : ""}`);
           result = reviewed.map((f) => ({ finding_id: f.id, status: f.status, reason: f.review?.reason }));
+        } else if (name === "compare_move_in") {
+          const ids = ((args.finding_ids as string[]) ?? []).filter((id) => findings.get(id)?.classification === "damage" && findings.get(id)?.status === "confirmed");
+          const withPhotos = ids.filter((id) => moveInFor(findings.get(id)!.photoId).length > 0);
+          yield step("compare_move_in", `Comparing ${withPhotos.length} damage finding(s) with move-in photos`);
+          const compared = await mapLimit(withPhotos, MAX_PARALLEL, async (id) => {
+            const f = findings.get(id)!;
+            const moveIn = moveInFor(f.photoId).map((p) => ({ id: p.id, image: images.get(p.id)! }));
+            return update({ ...f, moveIn: await compareMoveIn(f, images.get(f.photoId)!, moveIn) });
+          });
+          modelCalls += compared.length;
+          for (const f of compared) yield { type: "finding", data: f };
+          const pre = compared.filter((f) => f.moveIn?.verdict === "pre_existing");
+          yield step("compare_move_in", `${pre.length} already there at move-in${pre.length ? `: ${pre.map((f) => f.label).join(", ")}` : ""}, ${compared.filter((f) => f.moveIn?.verdict === "new").length} new, ${compared.filter((f) => f.moveIn?.verdict === "unclear").length} unclear`);
+          result = {
+            compared: compared.map((f) => ({ finding_id: f.id, verdict: f.moveIn?.verdict, reason: f.moveIn?.reason })),
+            skipped_no_move_in_photo: ids.filter((id) => !withPhotos.includes(id)),
+          };
         } else if (name === "reject_finding") {
           const f = findings.get(String(args.finding_id));
           if (!f) {
             result = { error: "Unknown finding_id" };
+          } else if (f.moveIn?.verdict === "pre_existing") {
+            // Vorbestehender Schaden ist das stärkste Argument des Mieters — nicht verwerfen, sondern in compute_share verknüpfen
+            result = { error: "Do not reject pre-existing damage. Link it in compute_share to the matching claim; it is shown as 'already at move-in' and the tenant owes nothing for it." };
           } else {
             const next = update({ ...f, status: "rejected", review: { confirmed: false, reason: String(args.reason ?? "Rejected by agent").slice(0, 200) } });
             yield { type: "finding", data: next };
@@ -358,7 +428,7 @@ Start with inspect_photos.`,
               component: COMPONENT_TYPES.includes(l.component) ? l.component : "other",
               variant: knownComponent(l.component)?.variant ?? null,
               findingIds: linked.map((f) => f.id),
-              findingClassifications: linked.map((f) => f.classification),
+              findingClassifications: linked.map((f) => (f.classification === "damage" && f.moveIn?.verdict === "pre_existing" ? "pre_existing" : f.classification)),
               ageYears: ageOf(l.component),
             };
           });
@@ -367,7 +437,7 @@ Start with inspect_photos.`,
           yield step("compute_share", `Claimed ${totals.claimed} ${totals.currency} → fair share ${totals.tenantPays} ${totals.currency}${totals.openLines ? ` (${totals.openLines} line(s) need more input)` : ""}`);
           result = { lines: lines.map((l) => ({ claim_id: l.claimId, component: l.component, status: l.status, tenantPays: l.tenantPays, explanation: l.explanation })), totals };
         } else if (name === "verify_report") {
-          const issues = checkReport({ findings: [...findings.values()], shareInputs, lines, totals, lifespans: pack.lifespans, claims: request.landlordClaims });
+          const issues = checkReport({ findings: [...findings.values()], shareInputs, lines, totals, lifespans: pack.lifespans, claims: request.landlordClaims, hasMoveIn: (f) => moveInFor(f.photoId).length > 0 });
           lastVerify = { passed: issues.length === 0, issues };
           yield { type: "verification", ...lastVerify };
           yield step("verify_report", issues.length ? `${issues.length} open issue(s): ${issues[0]}` : "All checks passed — every damage finding has a mask and a review, totals recomputed");
@@ -390,7 +460,7 @@ Start with inspect_photos.`,
     }
 
     // Ohne sauberen Abschluss trotzdem einen Report liefern — aber ehrlich als nicht verifiziert
-    const finalIssues = checkReport({ findings: [...findings.values()], shareInputs, lines, totals, lifespans: pack.lifespans, claims: request.landlordClaims });
+    const finalIssues = checkReport({ findings: [...findings.values()], shareInputs, lines, totals, lifespans: pack.lifespans, claims: request.landlordClaims, hasMoveIn: (f) => moveInFor(f.photoId).length > 0 });
     if (!finished) yield step("finish", `Iteration limit reached — report is not fully verified (${finalIssues.length} issue(s))`);
 
     const report: InspectionReport = {

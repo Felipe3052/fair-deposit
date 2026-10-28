@@ -20,7 +20,7 @@ export async function reviewFinding(finding: Finding, image: NormalizedImage): P
         {
           type: "text",
           text: `A move-out inspector claims this close-up shows: "${finding.label}" (${finding.classification}, ${finding.severity}) — ${finding.description}
-Be skeptical. Is this defect clearly visible in the image and correctly described? Shadows, reflections, wood grain, texture, furniture or decoration do NOT count.
+Be skeptical. Is this defect clearly visible in the image and correctly described? Shadows, reflections, wood grain, texture, furniture or decoration do NOT count. Judge what is visible as real: do not speculate that a defect is a sticker, decal or edited image.
 Return ONLY JSON: {"confirmed": true|false, "reason": "one short sentence"}`,
         },
         { type: "image_url", image_url: { url: crop.dataUrl } },
@@ -46,6 +46,8 @@ export function checkReport(args: {
   totals: ShareTotals | null;
   lifespans: Lifespan[];
   claims: InspectionRequest["landlordClaims"];
+  /** Gibt es Einzugsfotos für den Raum dieses Befunds? */
+  hasMoveIn?: (f: Finding) => boolean;
 }): string[] {
   const issues: string[] = [];
   const damage = args.findings.filter((f) => f.classification === "damage" && f.status !== "rejected");
@@ -53,6 +55,7 @@ export function checkReport(args: {
   for (const f of damage) {
     if (!f.evidence) issues.push(`Finding ${f.id} ("${f.label}") has no SAM mask — run segment_findings or reject it.`);
     if (!f.review) issues.push(`Finding ${f.id} ("${f.label}") was not reviewed — run review_findings.`);
+    if (f.status === "confirmed" && !f.moveIn && args.hasMoveIn?.(f)) issues.push(`Finding ${f.id} ("${f.label}") has move-in photos of its room but was not compared — run compare_move_in.`);
   }
   if (!args.shareInputs || !args.totals) {
     issues.push("compute_share has not been run yet.");
