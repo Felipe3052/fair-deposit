@@ -66,3 +66,10 @@ export function agentModel(): ReasoningModel {
     ? { client: openWeightsClient(), model: MODEL_SPARK_OPEN, openWeights: true }
     : { client: metaClient(), model: MODEL_SPARK, openWeights: false };
 }
+
+/** Konfigurierte Modellnamen ohne Client-Erzeugung (für die Anzeige vor dem ersten Lauf). */
+export function configuredModels(): { agent: string; vision: string; segmentation: string; openWeights: boolean } {
+  const agent = OPEN_WEIGHTS === "all" ? MODEL_SPARK_OPEN : MODEL_SPARK;
+  const vision = OPEN_WEIGHTS === "1" || OPEN_WEIGHTS === "all" ? MODEL_SPARK_OPEN : MODEL_SPARK;
+  return { agent, vision, segmentation: MODEL_SAM, openWeights: agent === MODEL_SPARK_OPEN || vision === MODEL_SPARK_OPEN };
+}

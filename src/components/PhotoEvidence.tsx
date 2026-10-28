@@ -21,17 +21,26 @@ export default function PhotoEvidence({
   findings,
   activeId,
   onSelect,
+  scanning = false,
 }: {
   photo: { id: string; room: string; dataUrl: string; width: number; height: number };
   findings: Finding[];
   activeId: string | null;
   onSelect: (id: string) => void;
+  /** Agent untersucht dieses Foto gerade → Scan-Linie */
+  scanning?: boolean;
 }) {
   return (
     <figure className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-black/5">
       <div className="relative">
         {/* eslint-disable-next-line @next/next/no-img-element -- lokale data URL, keine Optimierung möglich */}
         <img src={photo.dataUrl} alt={photo.room} className="block h-auto w-full" />
+        {scanning && (
+          <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
+            <div className="scan-overlay absolute inset-0" />
+            <div className="absolute inset-0 ring-2 ring-inset ring-[#6fd39b]/70" />
+          </div>
+        )}
         <svg
           viewBox={`0 0 ${photo.width} ${photo.height}`}
           className="absolute inset-0 h-full w-full"
@@ -51,7 +60,7 @@ export default function PhotoEvidence({
                     transform={`translate(${m.bounds.left},${m.bounds.top}) scale(${(m.bounds.right - m.bounds.left) / m.width},${(m.bounds.bottom - m.bounds.top) / m.height})`}
                     fill={color}
                     fillOpacity={active ? 0.6 : 0.4}
-                    className="transition-[fill-opacity] duration-500"
+                    className="mask-in transition-[fill-opacity] duration-500"
                   />
                 ))}
                 <rect

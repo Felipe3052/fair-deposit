@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import { COMPONENT_TYPES, type ComponentType, type ShareLine, type ShareTotals } from "@/lib/agent/types";
 import type { Lifespan } from "@/lib/fair-share";
 
@@ -22,6 +23,29 @@ const STATUS: Record<ShareLine["status"], { label: string; className: string }> 
   age_unknown: { label: "age needed", className: "bg-[#eef0f6] text-[#4b5a86]" },
   lifespan_unknown: { label: "not in table", className: "bg-[#eef0f6] text-[#4b5a86]" },
 };
+
+/** Zählt weich auf den Zielwert (beim ersten Erscheinen vom verlangten Betrag herunter). */
+function useCountTo(target: number, start: number, durationMs = 1600): { value: number; settled: boolean } {
+  const [value, setValue] = useState(start);
+  const from = useRef(start);
+  useEffect(() => {
+    const begin = from.current;
+    if (begin === target) return;
+    let frame = 0;
+    const t0 = performance.now();
+    const tick = (now: number) => {
+      const p = Math.min(1, (now - t0) / durationMs);
+      const eased = 1 - Math.pow(1 - p, 3);
+      const next = begin + (target - begin) * eased;
+      from.current = next;
+      setValue(next);
+      if (p < 1) frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [target, durationMs]);
+  return { value, settled: Math.abs(value - target) < 0.005 };
+}
 
 export function formatMoney(value: number, currency: string): string {
   return new Intl.NumberFormat("en-US", { style: "currency", currency, maximumFractionDigits: 2 }).format(value);
@@ -46,22 +70,27 @@ export default function ShareTable({
   edited: boolean;
 }) {
   const saved = totals.claimed - totals.tenantPays;
+  const fair = useCountTo(totals.tenantPays, totals.claimed);
+  const shownSaved = totals.claimed - fair.value;
   return (
     <div className="space-y-5">
       <div className="grid gap-3 sm:grid-cols-3">
-        <div className="rounded-2xl bg-white p-4 ring-1 ring-black/5">
+        <div className="rise-in rounded-2xl bg-white p-4 ring-1 ring-black/5">
           <div className="text-xs font-medium uppercase tracking-wide text-[#849084]">Landlord claims</div>
-          <div className="mt-1 text-2xl font-semibold text-[#2c3a30]">{formatMoney(totals.claimed, totals.currency)}</div>
+          <div className={`mt-1 text-3xl font-semibold transition-colors duration-700 ${fair.settled && saved > 0 ? "text-[#b13d0c] line-through decoration-2" : "text-[#2c3a30]"}`}>
+            {formatMoney(totals.claimed, totals.currency)}
+          </div>
         </div>
-        <div className="rounded-2xl bg-[#294b38] p-4 text-white">
+        <div className="rise-in rounded-2xl bg-[#294b38] p-4 text-white shadow-lg shadow-[#294b38]/20 [animation-delay:120ms]">
           <div className="text-xs font-medium uppercase tracking-wide text-white/70">Your fair share</div>
-          <div className="mt-1 text-2xl font-semibold">{formatMoney(totals.tenantPays, totals.currency)}</div>
+          <div className="mt-1 text-3xl font-semibold tabular-nums">{formatMoney(fair.value, totals.currency)}</div>
           {totals.openLines > 0 && <div className="mt-1 text-xs text-white/70">+ {totals.openLines} line(s) need more input{onFix ? " — fill in below" : ""}</div>}
           {edited && totals.openLines === 0 && <div className="mt-1 text-xs text-white/70">Updated with your input</div>}
         </div>
-        <div className="rounded-2xl bg-white p-4 ring-1 ring-black/5">
-          <div className="text-xs font-medium uppercase tracking-wide text-[#849084]">Difference</div>
-          <div className="mt-1 text-2xl font-semibold text-[#2c3a30]">{formatMoney(saved, totals.currency)}</div>
+        <div className="rise-in rounded-2xl bg-[#e8f3ea] p-4 ring-1 ring-[#294b38]/10 [animation-delay:240ms]">
+          <div className="text-xs font-medium uppercase tracking-wide text-[#3f6b47]">You keep</div>
+          <div className="mt-1 text-3xl font-semibold tabular-nums text-[#294b38]">{formatMoney(shownSaved, totals.currency)}</div>
+          {totals.claimed > 0 && fair.settled && <div className="mt-1 text-xs text-[#3f6b47]">{Math.round((saved / totals.claimed) * 100)}% of the claim was not justified</div>}
         </div>
       </div>
 

@@ -53,13 +53,13 @@ function roomFromFileName(fileName: string): string {
   return base.replace(/[-_]+/g, " ").replace(/\s+/g, " ").slice(0, 60);
 }
 
-/** Raffung der aufgezeichneten Demo-Fahrt (echte Laufzeit ≈ 80 s). */
+/** Raffung der aufgezeichneten Demo-Fahrt (echte Laufzeit ≈ 50–80 s); per ?speed=1 (Echtzeit) bis ?speed=10 übersteuerbar, z. B. fürs Video. */
 const REPLAY_SPEED = 3;
 
 let uid = 0;
 const nextKey = (prefix: string) => `${prefix}${++uid}`;
 
-export default function InspectionApp() {
+export default function InspectionApp({ configuredModels }: { configuredModels: InspectionReport["models"] }) {
   const [phase, setPhase] = useState<Phase>("setup");
   const [rulePackId, setRulePackId] = useState<RulePack["id"]>("ch");
   const [currency, setCurrency] = useState("CHF");
@@ -86,7 +86,21 @@ export default function InspectionApp() {
   const pack = getRulePack(rulePackId);
   const photoRooms = useMemo(() => Object.fromEntries(photos.map((p) => [p.id, p.room])), [photos]);
   const findingList = Object.values(findings);
+  const models = report?.models ?? configuredModels;
   const activeFinding = activeId ? findings[activeId] : undefined;
+
+  // Welche Fotos untersucht der Agent gerade? Abgeleitet aus dem letzten (noch laufenden) Schritt.
+  const scanningIds = useMemo(() => {
+    const last = phase === "running" ? steps[steps.length - 1] : undefined;
+    if (!last) return new Set<string>();
+    const moveOut = photos.filter((p) => p.kind === "move_out").map((p) => p.id);
+    const damaged = [...new Set(Object.values(findings).filter((f) => f.classification === "damage" && f.status !== "rejected").map((f) => f.photoId))];
+    if (last.tool === "prepare" || (last.tool === "inspect_photos" && last.summary.startsWith("Inspecting"))) return new Set(moveOut);
+    if (last.tool === "zoom_region" && last.summary.startsWith("Zooming")) return new Set(moveOut.filter((id) => last.summary.endsWith(` ${id}`)));
+    if ((last.tool === "segment_findings" && last.summary.startsWith("Creating")) || (last.tool === "review_findings" && last.summary.startsWith("Skeptical"))) return new Set(damaged);
+    if (last.tool === "compare_move_in" && last.summary.startsWith("Comparing")) return new Set([...damaged, ...photos.filter((p) => p.kind === "move_in").map((p) => p.id)]);
+    return new Set<string>();
+  }, [phase, steps, photos, findings]);
   const activeMoveOut = activeFinding ? photos.find((p) => p.id === activeFinding.photoId) : undefined;
 
   async function addFiles(files: FileList | File[]) {
@@ -204,9 +218,10 @@ export default function InspectionApp() {
     try {
       const recording = (await (await fetch("/demo/recorded-run.json")).json()) as { moveOutDate: string; events: { t: number; event: InspectionEvent }[] };
       resetRun(recording.moveOutDate, true);
+      const speed = Math.min(10, Math.max(1, Number(new URLSearchParams(window.location.search).get("speed")) || REPLAY_SPEED));
       let last = 0;
       for (const { t, event } of recording.events) {
-        await new Promise((r) => setTimeout(r, Math.min(2200, Math.max(0, (t - last) / REPLAY_SPEED))));
+        await new Promise((r) => setTimeout(r, Math.min(2200 * (REPLAY_SPEED / speed), Math.max(0, (t - last) / speed))));
         last = t;
         if (handleEvent(event)) break;
       }
@@ -269,36 +284,66 @@ export default function InspectionApp() {
           </div>
         </div>
         <div className="flex flex-wrap gap-2 text-[11px] font-medium text-[#4d6450]">
-          {/* Nach einem Lauf die tatsächlich verwendeten Modelle (Open Weights per Env-Flag) */}
-          {report && report.models.agent !== report.models.vision ? (
+          {/* Nach einem Lauf die tatsächlich verwendeten Modelle, vorher die konfigurierten (Open Weights per Env-Flag) */}
+          {models.agent !== models.vision ? (
             <>
-              <span className="rounded-full bg-white px-2.5 py-1 ring-1 ring-black/5">{report.models.agent.split("/").pop()} · agent</span>
-              <span className="rounded-full bg-white px-2.5 py-1 ring-1 ring-black/5">{report.models.vision.split("/").pop()} · vision</span>
+              <span className="rounded-full bg-white px-2.5 py-1 ring-1 ring-black/5">{models.agent.split("/").pop()} · agent</span>
+              <span className="rounded-full bg-white px-2.5 py-1 ring-1 ring-black/5">{models.vision.split("/").pop()} · vision</span>
             </>
           ) : (
-            <span className="rounded-full bg-white px-2.5 py-1 ring-1 ring-black/5">{report?.models.agent.split("/").pop() ?? "muse-spark-1.3"} · agent + vision</span>
+            <span className="rounded-full bg-white px-2.5 py-1 ring-1 ring-black/5">{models.agent.split("/").pop()} · agent + vision</span>
           )}
-          <span className="rounded-full bg-white px-2.5 py-1 ring-1 ring-black/5">{report?.models.segmentation ?? "sam-3.1"} · evidence masks</span>
-          {report?.models.openWeights && <span className="rounded-full bg-[#294b38] px-2.5 py-1 text-white">open weights via Baseten</span>}
+          <span className="rounded-full bg-white px-2.5 py-1 ring-1 ring-black/5">{models.segmentation} · evidence masks</span>
+          {models.openWeights && <span className="rounded-full bg-[#294b38] px-2.5 py-1 text-white">open weights via Baseten</span>}
         </div>
       </header>
 
       {!showResults && (
-        <section className="mb-8 flex items-center gap-6">
-          <div className="max-w-3xl">
-            <h2 className="text-3xl font-semibold tracking-tight text-[#202821] sm:text-4xl">What do you really owe at move-out?</h2>
-            <p className="mt-3 text-[#5f6d63]">
-              Upload photos of your apartment and your landlord&apos;s claims. The agent separates normal wear from real damage,
-              proves every finding with a mask, and computes your fair share from the component&apos;s remaining value.
-            </p>
+        <section className="mb-10">
+          <div className="flex items-center gap-8">
+            <div className="max-w-3xl">
+              <p className="mb-3 text-sm font-semibold uppercase tracking-wider text-[#6f866e]">Move-out inspection agent · for tenants</p>
+              <h2 className="text-4xl font-semibold leading-[1.1] tracking-tight text-[#202821] sm:text-5xl">
+                Your landlord wants <span className="text-[#b13d0c] line-through decoration-[3px]">CHF 2,900</span>.
+                <br />
+                You owe <span className="text-[#294b38]">CHF 247.50</span>.
+              </h2>
+              <p className="mt-4 max-w-2xl text-lg text-[#5f6d63]">
+                Fair Deposit inspects your move-out photos, proves every damage with a pixel mask, checks your move-in photos
+                for damage that was already there, and computes what you fairly owe from each component&apos;s remaining lifespan.
+              </p>
+              <div className="mt-6 flex flex-wrap items-center gap-3">
+                <button type="button" onClick={playRecording} disabled={loadingPhotos} className="rounded-2xl bg-[#294b38] px-5 py-3 text-base font-semibold text-white shadow-sm transition hover:bg-[#21402f] disabled:opacity-50">
+                  ▶ Watch the agent inspect an apartment
+                </button>
+                <a href="#setup" className="rounded-2xl bg-white px-5 py-3 text-base font-medium text-[#294b38] ring-1 ring-black/10 hover:bg-[#fafbf8]">
+                  Use my own photos ↓
+                </a>
+              </div>
+            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element -- statisches Maskottchen mit transparentem Hintergrund */}
+            <img src="/mascot/inspector.webp" alt="Fair Deposit inspector mascot" width={240} height={240} className="hidden h-60 w-60 shrink-0 md:block" />
           </div>
-          {/* eslint-disable-next-line @next/next/no-img-element -- statisches Maskottchen mit transparentem Hintergrund */}
-          <img src="/mascot/inspector.webp" alt="Fair Deposit inspector mascot" width={180} height={180} className="hidden h-44 w-44 shrink-0 sm:block" />
+          <ol className="mt-10 grid gap-3 sm:grid-cols-3">
+            {[
+              ["1", "Find", "Muse Spark scans every photo, zooms into corners and separates normal wear from real damage."],
+              ["2", "Prove", "SAM 3.1 masks each damage pixel by pixel, a second look rejects false alarms, move-in photos reveal what was already there."],
+              ["3", "Compute", "Code — never the model — applies official lifespans. You get a fair share and a reply letter with evidence."],
+            ].map(([n, title, text]) => (
+              <li key={n} className="rounded-2xl bg-white/70 p-4 ring-1 ring-black/5">
+                <div className="flex items-center gap-2">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#294b38] text-xs font-bold text-white">{n}</span>
+                  <span className="font-semibold text-[#2c3a30]">{title}</span>
+                </div>
+                <p className="mt-2 text-sm leading-6 text-[#5f6d63]">{text}</p>
+              </li>
+            ))}
+          </ol>
         </section>
       )}
 
       {phase === "setup" && (
-        <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
+        <div id="setup" className="grid scroll-mt-6 gap-6 lg:grid-cols-[1.4fr_1fr]">
           {/* Fotos */}
           <section className="rounded-3xl bg-white/70 p-5 ring-1 ring-black/5">
             <div className="mb-4 flex items-center justify-between">
@@ -497,6 +542,7 @@ export default function InspectionApp() {
                   findings={findingList.filter((f) => f.photoId === p.id)}
                   activeId={activeId}
                   onSelect={setActiveId}
+                  scanning={scanningIds.has(p.id)}
                 />
               ))}
             </div>
