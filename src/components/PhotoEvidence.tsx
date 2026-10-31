@@ -30,6 +30,7 @@ export default function PhotoEvidence({
   /** Agent untersucht dieses Foto gerade → Scan-Linie */
   scanning?: boolean;
 }) {
+  const visibleCount = findings.filter((f) => f.status !== "rejected").length;
   return (
     <figure className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-black/5">
       <div className="relative">
@@ -82,7 +83,7 @@ export default function PhotoEvidence({
       </div>
       <figcaption className="flex items-center justify-between px-4 py-2.5 text-sm">
         <span className="font-medium text-[#35443a]">{photo.room}</span>
-        <span className="text-xs text-[#849084]">{findings.filter((f) => f.status !== "rejected").length} finding(s)</span>
+        <span className="text-xs text-[#849084]">{visibleCount} {visibleCount === 1 ? "finding" : "findings"}</span>
       </figcaption>
     </figure>
   );

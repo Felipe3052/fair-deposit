@@ -106,6 +106,13 @@ export default function InspectionApp({ configuredModels }: { configuredModels: 
   }, [phase, steps, photos, findings]);
   const activeMoveOut = activeFinding ? photos.find((p) => p.id === activeFinding.photoId) : undefined;
 
+  /** Befund wählen (Sidebar) → Auswahl + Sprung zur Foto-Evidence, nicht zum Brief. */
+  function selectFinding(id: string) {
+    setActiveId(id);
+    const photoId = findings[id]?.photoId;
+    if (photoId) setTimeout(() => document.getElementById(`photo-${photoId}`)?.scrollIntoView({ behavior: "smooth", block: "center" }), 60);
+  }
+
   async function addFiles(files: FileList | File[]) {
     setLoadingPhotos(true);
     try {
@@ -434,9 +441,11 @@ export default function InspectionApp({ configuredModels }: { configuredModels: 
                 </label>
               </div>
               <div className="mt-4">
-                <div className="mb-2 flex items-center justify-between">
-                  <span className={labelClass}>When was it last renewed? (needed for the residual value)</span>
-                </div>
+                {components.length > 0 && (
+                  <div className="mb-2 flex items-center justify-between">
+                    <span className={labelClass}>When was it last renewed? (needed for the residual value)</span>
+                  </div>
+                )}
                 <ul className="space-y-2">
                   {components.map((c) => {
                     const variants = pack.lifespans.filter((l) => l.component === c.component && l.variant);
@@ -482,6 +491,15 @@ export default function InspectionApp({ configuredModels }: { configuredModels: 
             <button type="button" onClick={run} disabled={!canRun} className="w-full rounded-2xl bg-[#294b38] px-5 py-4 text-base font-semibold text-white shadow-sm transition hover:bg-[#21402f] disabled:cursor-not-allowed disabled:opacity-40">
               Start inspection
             </button>
+            {!canRun && !loadingPhotos && phase === "setup" && (
+              <p className="mt-2 text-center text-xs text-[#758177]">
+                {photos.length === 0
+                  ? "Add at least one photo to start."
+                  : unnamed > 0
+                    ? "Name every photo — the room name ends up in the report and the letter."
+                    : "Add a tenancy start date to run the inspection."}
+              </p>
+            )}
           </div>
         </div>
       )}
@@ -540,14 +558,16 @@ export default function InspectionApp({ configuredModels }: { configuredModels: 
           <div className="grid gap-6 lg:grid-cols-[1.6fr_1fr] print:block">
             <div className="grid content-start gap-4 sm:grid-cols-2 print:grid-cols-2">
               {photos.map((p) => (
-                <PhotoEvidence
-                  key={p.id}
-                  photo={{ ...p, room: p.kind === "move_in" ? `${p.room} · move-in` : p.room }}
-                  findings={findingList.filter((f) => f.photoId === p.id)}
-                  activeId={activeId}
-                  onSelect={setActiveId}
-                  scanning={scanningIds.has(p.id)}
-                />
+                <div key={p.id} id={`photo-${p.id}`}>
+                  <PhotoEvidence
+                    key={p.id}
+                    photo={{ ...p, room: p.kind === "move_in" ? `${p.room} · move-in` : p.room }}
+                    findings={findingList.filter((f) => f.photoId === p.id)}
+                    activeId={activeId}
+                    onSelect={setActiveId}
+                    scanning={scanningIds.has(p.id)}
+                  />
+                </div>
               ))}
             </div>
             <aside className="space-y-6 lg:sticky lg:top-6 lg:self-start print:hidden">
@@ -557,7 +577,7 @@ export default function InspectionApp({ configuredModels }: { configuredModels: 
               </section>
               <section className="rounded-3xl bg-white p-5 ring-1 ring-black/5">
                 <h3 className="mb-2 font-semibold text-[#2c3a30]">Findings</h3>
-                <FindingList findings={findingList} photoRooms={photoRooms} activeId={activeId} onSelect={setActiveId} />
+                <FindingList findings={findingList} photoRooms={photoRooms} activeId={activeId} onSelect={selectFinding} />
               </section>
               {report && (
                 <p className="text-xs text-[#849084]">{report.modelCalls} model calls · {report.disclaimer}</p>
