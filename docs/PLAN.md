@@ -60,6 +60,7 @@ Bewertung (Stage 2, 0–10): Impact 30% · Meta-Tooling 25% · Demo 25% · Techn
 - [ ] 30–45 s Kurzclip für X vorbereiten
 
 ### Tag 7 (So 1. Nov) — Puffer + Bonus
+- [x] UI-Polish (vorgezogen, 31. Okt): UI-Review-Fixes (Commit ba89861) — Befund-Klick springt zur Foto-Evidence statt zum Brief, "1 finding(s)" → korrekte Pluralisierung, Antwortbrief als gerenderte Vorschau (rohes Markdown nur noch hinter "Edit letter"), Hilfetext am disabled "Start inspection", Label "When was it last renewed?" nur mit Komponenten sichtbar. Build grün, 10/10 Tests, live auf Vercel verifiziert.
 - [ ] UI-Polish, Ladezustände, "Not legal advice"-Hinweis
 - [x] Deployment (Vercel, 28. Okt): https://fair-deposit-73nv.vercel.app — Live-Lauf getestet (51 s, verifiziert, 2'900 → 247.50), Demo-Ergebnis als aufgezeichnete Fahrt, Rate-Limit aktiv; Repo in `fair-deposit` umbenannt
 - [x] Open-Weight-Bonus (vorgezogen auf 28. Okt): `OPEN_WEIGHTS=1` (Vision-Pässe) bzw. `=all` (ganzer Agent) auf `meta-models/muse-spark-open-1026` über Baseten. Demo identisch zu hosted: 3 bestätigte Befunde, 2'900 → 391.50, verifiziert, 75–84 s statt 69 s. Default für Demo und Video: `OPEN_WEIGHTS=all`
