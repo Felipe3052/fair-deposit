@@ -9,6 +9,5 @@ export const Root = () => (
     fps={FPS}
     width={1920}
     height={1080}
-    defaultProps={{ voice: null as string | null }}
   />
 );

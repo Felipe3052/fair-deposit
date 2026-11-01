@@ -7,7 +7,12 @@ export const FPS = 30;
 const sec = (s: number) => Math.round(s * FPS);
 
 // Szenengrenzen nach docs/VOICEOVER.md (Sekunden)
-const T = { hook: 0, stack: 14, agent: 28, compare: 70, calc: 100, letter: 135, arch: 155, outro: 172, end: 180 };
+const T = { hook: 0, stack: 14, agent: 28, compare: 70, calc: 98, letter: 132, arch: 150, outro: 168, end: 180 };
+
+/** Voice-over je Szene (ElevenLabs, Jesse); startet 0,3 s nach Szenenbeginn. */
+const VO: React.FC<{ file: string }> = ({ file }) => (
+  <Sequence from={9}><Audio src={staticFile(file)} /></Sequence>
+);
 export const TOTAL_FRAMES = sec(T.end);
 const scene = (a: keyof typeof T, b: keyof typeof T) => ({ from: sec(T[a]), durationInFrames: sec(T[b] - T[a]) });
 
@@ -18,6 +23,7 @@ const Title: React.FC<{ children: React.ReactNode; size?: number; color?: string
 /** 0:00 Hook: Hero-Footage mit Maskottchen, das die Frage stellt. */
 const Hook = () => (
   <Backdrop>
+    <VO file="01-hook.mp3" />
     <Footage from={2.2} to={4.8} zoomTo={1.04} originX={30} originY={20}>
       <Box x={104} y={116} w={620} h={120} at={80} until={380} color={C.rust} label="The claim" />
     </Footage>
@@ -40,6 +46,7 @@ const Stack = () => {
   ];
   return (
     <Backdrop>
+      <VO file="02-stack.mp3" />
       <div style={{ position: "absolute", left: 110, top: 100 }}>
         <Title>Built on Meta's models</Title>
         <div style={{ marginTop: 56, display: "grid", gap: 22, width: 1180 }}>
@@ -68,12 +75,13 @@ const Stack = () => {
 /** 0:28 Agent live (Replay 4.3-21.7 s auf 42 s gestreckt). */
 const Agent = () => (
   <Backdrop>
+    <VO file="03-agent.mp3" />
     <Footage from={5.1} to={22.4} rate={0.412} />
     <Gutter>
-      <StepCard n={1} text="Spark inspects and zooms" at={sec(4)} />
-      <StepCard n={2} text="SAM 3.1 draws proof masks" at={sec(15)} />
-      <StepCard n={3} text="Second look rejects false alarms" at={sec(27)} />
-      <Mascot size={190} delay={6} bounceAt={[sec(4), sec(15), sec(27), sec(38)]} />
+      <StepCard n={1} text="Spark inspects and zooms" at={sec(1)} />
+      <StepCard n={2} text="SAM 3.1 draws proof masks" at={sec(8)} />
+      <StepCard n={3} text="Second look rejects false alarms" at={sec(18)} />
+      <Mascot size={190} delay={6} bounceAt={[sec(1), sec(8), sec(18), sec(30)]} />
     </Gutter>
     <Caption text="Recorded run · 22 model calls · 58 s · demo photos partly synthetic (Muse Image)" />
   </Backdrop>
@@ -82,11 +90,12 @@ const Agent = () => (
 /** 1:10 Einzugsvergleich. */
 const Compare = () => (
   <Backdrop>
+    <VO file="04-compare.mp3" />
     <Footage from={34.6} to={38.6} rate={0.4} zoomTo={1.08} originX={50} originY={25} />
     <Gutter>
       <StepCard n={1} text="Compare with move-in photos" at={sec(2)} />
-      <StepCard n={2} text="Floor was already scratched" at={sec(12)} />
-      <Mascot size={210} delay={6} bounceAt={[sec(12), sec(22)]} />
+      <StepCard n={2} text="Floor was already scratched" at={sec(8)} />
+      <Mascot size={210} delay={6} bounceAt={[sec(8), sec(17)]} />
     </Gutter>
     <Caption text="Move-in vs move-out: the scratched floor was already there, so the tenant owes $0" />
   </Backdrop>
@@ -95,17 +104,18 @@ const Compare = () => (
 /** 1:40 Rechnung. */
 const Calc = () => (
   <Backdrop>
+    <VO file="05-calc.mp3" />
     <Footage from={25.5} to={26.5} rate={1} zoomTo={1.0}>
-      <Box x={106} y={176} w={400} h={108} at={sec(2)} until={sec(7)} color={C.rust} label="Landlord claims" />
-      <Box x={520} y={176} w={400} h={108} at={sec(7)} until={sec(12)} color={C.green} label="Your fair share" />
-      <Box x={100} y={338} w={1240} h={124} at={sec(12)} until={sec(19)} color={C.rust} label="Paint: 3.8 of 5 years, 24% residual, $144" />
-      <Box x={100} y={462} w={1240} h={104} at={sec(19)} until={sec(25)} color={C.blue} label="Already at move-in: $0" />
-      <Box x={100} y={566} w={1240} h={94} at={sec(25)} until={sec(30)} color={C.sage} label="No evidence: $0" />
+      <Box x={100} y={338} w={1240} h={124} at={sec(7)} until={sec(16)} color={C.rust} label="Paint: 3.8 of 5 years, 24% residual, $144" />
+      <Box x={100} y={462} w={1240} h={104} at={sec(16)} until={sec(19.5)} color={C.blue} label="Already at move-in: $0" />
+      <Box x={100} y={566} w={1240} h={94} at={sec(19.5)} until={sec(23)} color={C.sage} label="No evidence: $0" />
+      <Box x={106} y={176} w={400} h={108} at={sec(24)} until={sec(26.5)} color={C.rust} label="Landlord claims" />
+      <Box x={520} y={176} w={400} h={108} at={sec(26.5)} until={sec(32)} color={C.green} label="Your fair share" />
     </Footage>
     <Gutter>
-      <StepCard n={1} text="Rules are data" at={sec(12)} />
-      <StepCard n={2} text="Math is code, recomputed and verified" at={sec(19)} />
-      <Mascot size={200} delay={6} bounceAt={[sec(8), sec(30)]} />
+      <StepCard n={1} text="Rules are data" at={sec(3)} />
+      <StepCard n={2} text="Math is code, recomputed and verified" at={sec(20)} />
+      <Mascot size={200} delay={6} bounceAt={[sec(16), sec(26.5)]} />
     </Gutter>
     <Caption text="$1,800 claimed, $144 owed. Numbers are computed in code, never by the model." />
   </Backdrop>
@@ -114,13 +124,14 @@ const Calc = () => (
 /** 2:15 Brief. */
 const Letter = () => (
   <Backdrop>
+    <VO file="06-letter.mp3" />
     <Footage from={41.1} to={46.5} rate={0.4} zoomTo={1.05} originX={50} originY={20}>
-      <Box x={1146} y={42} w={172} h={38} at={sec(10)} until={sec(19)} color={C.green} label="Evidence report (PDF)" />
+      <Box x={1146} y={42} w={172} h={38} at={sec(6)} until={sec(13)} color={C.green} label="Evidence report (PDF)" />
     </Footage>
     <Gutter>
-      <StepCard n={1} text="Reply letter with the evidence" at={sec(2)} />
-      <StepCard n={2} text="Edit anything, then send" at={sec(11)} />
-      <Mascot size={200} delay={6} bounceAt={[sec(14)]} />
+      <StepCard n={1} text="Reply letter with the evidence" at={sec(1)} />
+      <StepCard n={2} text="Edit anything, then send" at={sec(7.5)} />
+      <Mascot size={200} delay={6} bounceAt={[sec(9)]} />
     </Gutter>
     <Caption text="The agent finishes the job: a reply to the landlord and a PDF evidence report" />
   </Backdrop>
@@ -146,6 +157,7 @@ const Arch = () => {
   ];
   return (
     <Backdrop>
+      <VO file="07-arch.mp3" />
       <div style={{ position: "absolute", left: 90, top: 60 }}><Title size={64}>How it works</Title></div>
       <svg style={{ position: "absolute", inset: 0 }} width={1920} height={1080}>
         {lines.map(([x1, y1, x2, y2], i) => {
@@ -176,6 +188,7 @@ const Outro = () => {
   const s = spring({ frame, fps, config: { damping: 12, stiffness: 90 } });
   return (
     <Backdrop>
+      <VO file="08-outro.mp3" />
       <div style={{ position: "absolute", left: 140, top: 260, transform: `translateY(${(1 - s) * 40}px)`, opacity: s, fontFamily: FONT }}>
         <Title size={130} color={C.green}>Fair Deposit</Title>
         <div style={{ fontSize: 46, fontWeight: 600, color: C.ink, marginTop: 24 }}>Finally, evidence.</div>
@@ -191,9 +204,8 @@ const Outro = () => {
   );
 };
 
-export const Demo: React.FC<{ voice: string | null }> = ({ voice }) => (
+export const Demo: React.FC = () => (
   <AbsoluteFill style={{ background: C.bg }}>
-    {voice && <Audio src={staticFile(voice)} />}
     <Sequence {...scene("hook", "stack")}><Fade><Hook /></Fade></Sequence>
     <Sequence {...scene("stack", "agent")}><Fade><Stack /></Fade></Sequence>
     <Sequence {...scene("agent", "compare")}><Fade><Agent /></Fade></Sequence>
