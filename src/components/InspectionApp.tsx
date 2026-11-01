@@ -315,7 +315,7 @@ export default function InspectionApp({ configuredModels }: { configuredModels: 
             <div className="max-w-3xl">
               <p className="mb-3 text-sm font-semibold uppercase tracking-wider text-[#6f866e]">Move-out inspection agent · for tenants</p>
               <h2 className="text-4xl font-semibold leading-[1.1] tracking-tight text-[#202821] sm:text-5xl">
-                Your landlord wants <span className="text-[#b13d0c]">$1,800</span> from your deposit.
+                Your landlord wants <span className="text-[#b13d0c]">$1,800</span>.
                 <br />
                 <span className="text-[#294b38]">What do you really owe?</span>
               </h2>

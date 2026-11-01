@@ -74,29 +74,29 @@ export default function ShareTable({
   const shownSaved = totals.claimed - fair.value;
   return (
     <div className="space-y-5">
-      <div className="grid gap-3 sm:grid-cols-3">
-        <div className="rise-in rounded-2xl bg-white p-4 ring-1 ring-black/5">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <div className="rise-in rounded-2xl bg-white p-3 ring-1 ring-black/5 sm:p-4">
           <div className="text-xs font-medium uppercase tracking-wide text-[#849084]">Landlord claims</div>
-          <div className={`mt-1 text-3xl font-semibold transition-colors duration-700 ${fair.settled && saved > 0 ? "text-[#b13d0c] line-through decoration-2" : "text-[#2c3a30]"}`}>
+          <div className={`mt-1 text-2xl font-semibold sm:text-3xl transition-colors duration-700 ${fair.settled && saved > 0 ? "text-[#b13d0c] line-through decoration-2" : "text-[#2c3a30]"}`}>
             {formatMoney(totals.claimed, totals.currency)}
           </div>
         </div>
-        <div className="rise-in rounded-2xl bg-[#294b38] p-4 text-white shadow-lg shadow-[#294b38]/20 [animation-delay:120ms]">
+        <div className="rise-in order-first col-span-2 rounded-2xl bg-[#294b38] p-4 text-white sm:order-none sm:col-span-1 shadow-lg shadow-[#294b38]/20 [animation-delay:120ms]">
           <div className="text-xs font-medium uppercase tracking-wide text-white/70">Your fair share</div>
-          <div className="mt-1 text-3xl font-semibold tabular-nums">{formatMoney(fair.value, totals.currency)}</div>
+          <div className="mt-1 text-2xl font-semibold sm:text-3xl tabular-nums">{formatMoney(fair.value, totals.currency)}</div>
           {totals.openLines > 0 && <div className="mt-1 text-xs text-white/70">+ {totals.openLines} line(s) need more input{onFix ? " — fill in below" : ""}</div>}
           {edited && totals.openLines === 0 && <div className="mt-1 text-xs text-white/70">Updated with your input</div>}
         </div>
-        <div className="rise-in rounded-2xl bg-[#e8f3ea] p-4 ring-1 ring-[#294b38]/10 [animation-delay:240ms]">
+        <div className="rise-in rounded-2xl bg-[#e8f3ea] p-3 ring-1 ring-[#294b38]/10 [animation-delay:240ms] sm:p-4">
           <div className="text-xs font-medium uppercase tracking-wide text-[#3f6b47]">You keep</div>
-          <div className="mt-1 text-3xl font-semibold tabular-nums text-[#294b38]">{formatMoney(shownSaved, totals.currency)}</div>
+          <div className="mt-1 text-2xl font-semibold sm:text-3xl tabular-nums text-[#294b38]">{formatMoney(shownSaved, totals.currency)}</div>
           {totals.claimed > 0 && fair.settled && <div className="mt-1 text-xs text-[#3f6b47]">{Math.round((saved / totals.claimed) * 100)}% of the claim was not justified</div>}
         </div>
       </div>
 
       <div className="overflow-x-auto rounded-2xl bg-white ring-1 ring-black/5">
-        <table className="w-full min-w-[640px] text-left text-sm">
-          <thead className="text-xs uppercase tracking-wide text-[#849084]">
+        <table className="w-full text-left text-sm sm:min-w-[640px]">
+          <thead className="hidden text-xs uppercase sm:table-header-group tracking-wide text-[#849084]">
             <tr className="border-b border-[#eef0ea]">
               <th className="px-4 py-3 font-medium">Item</th>
               <th className="px-4 py-3 font-medium">Assessment</th>
@@ -107,27 +107,31 @@ export default function ShareTable({
           </thead>
           <tbody>
             {lines.map((l, i) => (
-              <tr key={i} className="border-b border-[#f3f4ef] align-top last:border-0">
-                <td className="px-4 py-3">
+              <tr key={i} className="block border-b border-[#f3f4ef] align-top last:border-0 sm:table-row">
+                <td className="block px-4 pb-1 pt-3 sm:table-cell sm:py-3">
                   <div className="font-medium text-[#2c3a30]">{l.claimDescription ?? "Damage without claim"}</div>
                   <div className="mt-0.5 text-xs text-[#758177]">{l.lifespanLabel ?? l.component.replace(/_/g, " ")}</div>
                 </td>
-                <td className="px-4 py-3">
+                <td className="block px-4 py-1 sm:table-cell sm:py-3">
                   <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${STATUS[l.status].className}`}>{STATUS[l.status].label}</span>
                   <div className="mt-1 max-w-sm text-xs leading-5 text-[#5f6d63]">{l.explanation}</div>
                   {onFix && (l.status === "age_unknown" || l.status === "lifespan_unknown" || l.status === "damage") && (
                     <LineFixer line={l} lifespans={lifespans} input={componentInputs[l.component]} onFix={(fix) => onFix(i, fix)} />
                   )}
                 </td>
-                <td className="px-4 py-3 text-right tabular-nums text-[#5f6d63]">
+                <td className="hidden px-4 py-3 text-right tabular-nums text-[#5f6d63] sm:table-cell">
                   {l.ageYears ?? "?"} / {l.lifespanYears ?? "?"} y
                   {l.residualShare !== null && <div className="text-xs text-[#849084]">{Math.round(l.residualShare * 100)}% residual</div>}
                 </td>
-                <td className="px-4 py-3 text-right tabular-nums text-[#5f6d63]">
+                <td className="hidden px-4 py-3 text-right tabular-nums text-[#5f6d63] sm:table-cell">
                   {l.claimedAmount !== null ? formatMoney(l.claimedAmount, totals.currency) : "—"}
                 </td>
-                <td className="px-4 py-3 text-right font-semibold tabular-nums text-[#2c3a30]">
-                  {l.tenantPays !== null ? formatMoney(l.tenantPays, totals.currency) : "open"}
+                <td className="flex items-baseline justify-between gap-3 px-4 pb-3 pt-1 font-semibold tabular-nums text-[#2c3a30] sm:table-cell sm:py-3 sm:text-right">
+                  <span className="text-xs font-normal text-[#758177] sm:hidden">
+                    Claimed {l.claimedAmount !== null ? formatMoney(l.claimedAmount, totals.currency) : "—"}
+                    {l.lifespanYears !== null && l.ageYears !== null ? ` · ${l.ageYears}/${l.lifespanYears} y` : ""} · you owe
+                  </span>
+                  {l.tenantPays !== null ? formatMoney(l.tenantPays, totals.currency) : l.status === "no_evidence" ? formatMoney(0, totals.currency) : "open"}
                 </td>
               </tr>
             ))}
