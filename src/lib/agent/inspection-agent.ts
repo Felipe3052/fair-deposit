@@ -10,7 +10,7 @@ import type { AgentStep, Box, Finding, InspectionEvent, InspectionReport, Inspec
 
 const MAX_ITERATIONS = 16;
 const MAX_PARALLEL = 4;
-const DISCLAIMER = "Not legal advice. This is an estimate based on the photos provided and the cited lifespan rules.";
+const DISCLAIMER = "Not legal advice. This is an estimate based on the photos provided and the lifespan rules shown in the report.";
 
 const AGENT_TOOLS = [
   {

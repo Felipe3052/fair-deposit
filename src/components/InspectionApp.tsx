@@ -571,14 +571,29 @@ export default function InspectionApp({ configuredModels }: { configuredModels: 
               ))}
             </div>
             <aside className="space-y-6 lg:sticky lg:top-6 lg:self-start print:hidden">
-              <section className="rounded-3xl bg-white p-5 ring-1 ring-black/5">
-                <h3 className="mb-4 font-semibold text-[#2c3a30]">Agent steps</h3>
-                <AgentSteps steps={steps} running={phase === "running"} />
-              </section>
-              <section className="rounded-3xl bg-white p-5 ring-1 ring-black/5">
-                <h3 className="mb-2 font-semibold text-[#2c3a30]">Findings</h3>
-                <FindingList findings={findingList} photoRooms={photoRooms} activeId={activeId} onSelect={selectFinding} />
-              </section>
+              {phase === "done" ? (
+                <>
+                  <section className="rounded-3xl bg-white p-5 ring-1 ring-black/5">
+                    <h3 className="mb-2 font-semibold text-[#2c3a30]">Findings</h3>
+                    <FindingList findings={findingList} photoRooms={photoRooms} activeId={activeId} onSelect={selectFinding} />
+                  </section>
+                  <details className="rounded-3xl bg-white p-5 ring-1 ring-black/5">
+                    <summary className="cursor-pointer font-semibold text-[#2c3a30]">Agent steps ({steps.length})</summary>
+                    <div className="mt-4"><AgentSteps steps={steps} running={false} /></div>
+                  </details>
+                </>
+              ) : (
+                <>
+                  <section className="rounded-3xl bg-white p-5 ring-1 ring-black/5">
+                    <h3 className="mb-4 font-semibold text-[#2c3a30]">Agent steps</h3>
+                    <AgentSteps steps={steps} running={phase === "running"} />
+                  </section>
+                  <section className="rounded-3xl bg-white p-5 ring-1 ring-black/5">
+                    <h3 className="mb-2 font-semibold text-[#2c3a30]">Findings</h3>
+                    <FindingList findings={findingList} photoRooms={photoRooms} activeId={activeId} onSelect={selectFinding} />
+                  </section>
+                </>
+              )}
               {report && (
                 <p className="text-xs text-[#849084]">{report.modelCalls} model calls · {report.disclaimer}</p>
               )}

@@ -8,6 +8,7 @@ const TOOL_LABELS: Record<string, string> = {
   zoom_region: "Zoom",
   segment_findings: "Evidence masks (SAM 3.1)",
   review_findings: "Second look",
+  compare_move_in: "Move-in comparison",
   reject_finding: "Rejected finding",
   compute_share: "Fair share (code)",
   verify_report: "Verification",

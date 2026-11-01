@@ -180,6 +180,7 @@ function LineFixer({
               {variants.map((v) => <option key={v.variant} value={v.variant}>{v.label}</option>)}
             </select>
           )}
+          <span className="text-xs text-[#758177]">Last renewed:</span>
           <input
             value={input?.installedYear ?? ""}
             onChange={(e) => onFix({ installedYear: e.target.value.replace(/\D/g, "").slice(0, 4) })}
