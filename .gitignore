@@ -54,3 +54,6 @@ data/test-vittsjo-reference.png
 /video/footage
 /video/public/replay.mp4
 /video/public/*.mp3
+/video/public/agent.mp4
+/video/public/still-*.png
+/video/out

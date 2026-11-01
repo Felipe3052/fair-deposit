@@ -1,55 +1,45 @@
-import { Img, interpolate, spring, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
+import { Easing, Img, interpolate, staticFile, useCurrentFrame } from "remotion";
 import { C, FONT } from "./theme";
 
 /**
- * Das Muse-Maskottchen: federnder Auftritt, ständiges leichtes Wippen, optional Sprechblase
- * und "Hüpfer" (bounceAt = Frames innerhalb der Szene), z. B. wenn $144 erscheint.
+ * Maskottchen-Auftritt ("Beat") an Übergängen: wächst kurz groß ins Bild, zeigt einen kurzen Satz und verschwindet wieder.
+ * Kein Wippen, kein Hüpfen, kein Dauer-Tanz. Ein Auftritt dauert ~2 s.
  */
-export const Mascot: React.FC<{
+export const MascotBeat: React.FC<{
+  at: number;
+  text?: string;
+  duration?: number;
   size?: number;
-  delay?: number;
-  bubble?: string;
-  bubbleDelay?: number;
-  bounceAt?: number[];
+  right?: number;
+  bottom?: number;
   flip?: boolean;
-  tilt?: number;
-}> = ({ size = 260, delay = 0, bubble, bubbleDelay = 18, bounceAt = [], flip = false, tilt = 0 }) => {
+}> = ({ at, text, duration = 66, size = 300, right = 70, bottom = 60, flip = false }) => {
   const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
-  const enter = spring({ frame: frame - delay, fps, config: { damping: 11, stiffness: 110 } });
-  const bob = Math.sin((frame / fps) * Math.PI * 1.4) * 7;
-  const sway = Math.sin((frame / fps) * Math.PI * 0.9) * 2.2 + tilt;
-  const hop = bounceAt.reduce((sum, b) => {
-    const f = frame - b;
-    return f < 0 || f > 22 ? sum : sum + Math.abs(Math.sin((f / 22) * Math.PI)) * -46 * (1 - f / 28);
-  }, 0);
-  const scale = interpolate(enter, [0, 1], [0.2, 1]);
-  const bubbleIn = spring({ frame: frame - delay - bubbleDelay, fps, config: { damping: 14, stiffness: 130 } });
-
+  const t = frame - at;
+  if (t < 0 || t > duration) return null;
+  const inn = interpolate(t, [0, 14], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: Easing.out(Easing.cubic) });
+  const out = interpolate(t, [duration - 14, duration], [1, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: Easing.in(Easing.cubic) });
+  const k = Math.min(inn, out);
+  const bubbleIn = interpolate(t, [10, 22], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: Easing.out(Easing.cubic) });
+  const bubble = Math.min(bubbleIn, out);
   return (
-    <div style={{ position: "relative", width: size, fontFamily: FONT }}>
-      {bubble && (
-        <div
-          style={{
-            position: "absolute", bottom: size * 0.92, left: "50%", width: Math.min(size * 1.25, 248),
-            transform: `translateX(-50%) scale(${bubbleIn}) translateY(${(1 - bubbleIn) * 20}px)`,
-            transformOrigin: "50% 100%", background: C.card, borderRadius: 26, padding: "16px 20px",
-            fontSize: 26, lineHeight: 1.25, fontWeight: 600, color: C.ink, textAlign: "center",
-            boxShadow: "0 10px 30px rgba(32,40,33,0.16)", border: "1px solid rgba(0,0,0,0.06)",
-          }}
-        >
-          {bubble}
-          <div style={{ position: "absolute", left: "50%", bottom: -12, width: 24, height: 24, background: C.card, transform: "translateX(-50%) rotate(45deg)", borderRight: "1px solid rgba(0,0,0,0.06)", borderBottom: "1px solid rgba(0,0,0,0.06)" }} />
+    <div style={{ position: "absolute", right, bottom, width: size, height: size, fontFamily: FONT, opacity: k, transform: `translateY(${(1 - k) * 80}px) scale(${0.6 + 0.4 * k})`, transformOrigin: "50% 100%" }}>
+      {text && (
+        <div style={{ position: "absolute", bottom: size * 0.88, right: size * 0.25, background: C.card, borderRadius: 26, padding: "14px 24px", fontSize: 34, fontWeight: 700, color: C.ink, whiteSpace: "nowrap", boxShadow: "0 12px 32px rgba(32,40,33,0.18)", opacity: bubble, transform: `translateY(${(1 - bubble) * 14}px)` }}>
+          {text}
+          <div style={{ position: "absolute", right: 46, bottom: -11, width: 22, height: 22, background: C.card, transform: "rotate(45deg)" }} />
         </div>
       )}
-      <Img
-        src={staticFile("inspector.webp")}
-        style={{
-          width: size, height: size, display: "block",
-          transform: `translateY(${bob + hop + (1 - enter) * 120}px) rotate(${sway}deg) scale(${scale}) scaleX(${flip ? -1 : 1})`,
-          filter: "drop-shadow(0 14px 18px rgba(32,40,33,0.18))",
-        }}
-      />
+      <Img src={staticFile("inspector.webp")} style={{ width: size, height: size, display: "block", transform: `scaleX(${flip ? -1 : 1})`, filter: "drop-shadow(0 16px 20px rgba(32,40,33,0.2))" }} />
     </div>
+  );
+};
+
+/** Ruhiges Endkarten-Maskottchen (nur Einblenden, kein Dauer-Tanz). */
+export const MascotStatic: React.FC<{ size: number; at?: number }> = ({ size, at = 10 }) => {
+  const frame = useCurrentFrame();
+  const o = interpolate(frame, [at, at + 20], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: Easing.out(Easing.cubic) });
+  return (
+    <Img src={staticFile("inspector.webp")} style={{ width: size, height: size, display: "block", opacity: o, transform: `translateY(${(1 - o) * 40}px)`, filter: "drop-shadow(0 16px 20px rgba(32,40,33,0.2))" }} />
   );
 };
