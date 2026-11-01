@@ -315,11 +315,10 @@ export default function InspectionApp({ configuredModels }: { configuredModels: 
             <div className="max-w-3xl">
               <p className="mb-3 text-sm font-semibold uppercase tracking-wider text-[#6f866e]">Move-out inspection agent · for tenants</p>
               <h2 className="text-4xl font-semibold leading-[1.1] tracking-tight text-[#202821] sm:text-5xl">
-                Your landlord wants <span className="text-[#b13d0c] line-through decoration-[3px]">$1,800</span>.
+                Your landlord wants <span className="text-[#b13d0c]">$1,800</span> from your deposit.
                 <br />
-                You owe <span className="text-[#294b38]">$144</span>.
+                <span className="text-[#294b38]">What do you really owe?</span>
               </h2>
-              <p className="mt-2 text-xs font-medium uppercase tracking-wider text-[#849084]">Example from the demo apartment — run it yourself below</p>
               <p className="mt-4 max-w-2xl text-lg text-[#5f6d63]">
                 Fair Deposit inspects your move-out photos, proves every damage with a pixel mask, checks your move-in photos
                 for damage that was already there, and computes what you fairly owe from each component&apos;s remaining lifespan.

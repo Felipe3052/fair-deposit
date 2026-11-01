@@ -6,7 +6,7 @@ Kennzeichnen: "recorded run of a real agent run" im Voice-over nennen (Replay-Ba
 
 | Zeit | Bild | Voice-over (EN) |
 |---|---|---|
-| 0:00–0:15 | Hero: "$1,800 → $144", Maskottchen | "Landlord says: $1,800 from my deposit. Is that fair? Most renters just pay. Fair Deposit is an agent that checks — and proves it." |
+| 0:00–0:15 | Hero "Your landlord wants $1,800 — what do you really owe?", Maskottchen | "Landlord says: $1,800 from my deposit. Is that fair? Most renters just pay. Fair Deposit is an agent that checks — and proves it." |
 | 0:15–0:30 | Landing-Karten Find / Prove / Compute, dann Klick auf Demo | "It's built on Meta's models: Muse Spark as the agent, SAM 3.1 for evidence, running on open weights via Baseten." |
 | 0:30–1:10 | Live-Schritte: Fotos, Scan-Effekt, Zoom, SAM-Masken legen sich über Loch / Kritzeleien / Boden, "Skeptical second look" | "Spark inspects every photo, zooms into regions, and SAM draws a pixel mask as proof for each finding. Then a second pass tries to reject false alarms — that's the agent verifying itself." |
 | 1:10–1:40 | Move-in Vergleich: Befund anklicken → Vorher/Nachher-Panel, Parkett "already at move-in" | "Now the key move: it compares against my move-in photos. The scratched floor was already there — the tenant owes nothing for it." |
