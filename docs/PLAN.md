@@ -55,7 +55,8 @@ Bewertung (Stage 2, 0–10): Impact 30% · Meta-Tooling 25% · Demo 25% · Techn
 
 ### Tag 6 (Sa 31. Okt) — Demo-Video + README
 - [x] Storyboard ([STORYBOARD.md](STORYBOARD.md)) und Voice-over ([VOICEOVER.md](VOICEOVER.md)), englisch
-- [x] **Video (1. Nov):** Remotion-Schnitt in `video/` (echte Browser-Aufnahme des Replays + animiertes Maskottchen, Callouts, Architektur-Folie), Voice-over mit ElevenLabs (Stimme Jesse, 8 Blöcke), **2:29** lang. Offen: Länge laut Participant Guide ("genau 3:00" oder "bis zu"), Lizenz der Stimme (Gratis-Konto wurde bei ElevenLabs gesperrt), X-Kurzclip
+- [ ] **Video v2 (Render am 2. Nov):** Neue Fassung mit 2x-Aufnahme, virtueller Kamera (Zooms), Maskottchen nur an Übergängen; Code gepusht, Anleitung in `video/README.md`. Offen: Rendern (ca. 25 min), QA mit `remotion-video-check`, Hörprobe, Länge/Lizenz klären.
+- [x] **Video v1 (1. Nov):** Remotion-Schnitt in `video/` (echte Browser-Aufnahme des Replays + animiertes Maskottchen, Callouts, Architektur-Folie), Voice-over mit ElevenLabs (Stimme Jesse, 8 Blöcke), **2:29** lang. Offen: Länge laut Participant Guide ("genau 3:00" oder "bis zu"), Lizenz der Stimme (Gratis-Konto wurde bei ElevenLabs gesperrt), X-Kurzclip
 - [x] README englisch (Problem, Meta-Modelle, Setup, "built during the hackathon"); Architektur-Diagramm als Folie im Video
 - [ ] 30–45 s Kurzclip für X aufnehmen (Text: [X-POST.md](X-POST.md))
 
