@@ -1,7 +1,7 @@
 # Voice-over — exakt 3:00 (englisch, ca. 150 Wörter/Minute)
 
 Zu jedem Block: Zielzeit, Bild, Text. Wortzahlen sind auf Sprechtempo ~150 wpm gerechnet (inkl. kleiner Pausen für Bildwechsel).
-Gesamt ca. 320 Wörter (≈ 2:15 reine Sprechzeit bei 150 wpm); der Rest sind bewusste Pausen, in denen die Demo für sich spricht. Zwei Probeaufnahmen machen und bei Abweichung die mit **[kürzbar]** markierten Sätze streichen.
+Gesamt ca. 335 Wörter (≈ 2:14 reine Sprechzeit bei 150 wpm); der Rest sind bewusste Pausen, in denen die Demo für sich spricht. Zwei Probeaufnahmen machen und bei Abweichung die mit **[kürzbar]** markierten Sätze streichen.
 
 ## 0:00–0:14 · Hook (Hero)
 Bild: Landing mit "Your landlord wants $1,800. What do you really owe?"
