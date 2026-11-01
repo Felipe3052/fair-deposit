@@ -7,7 +7,7 @@ export const FPS = 30;
 const sec = (s: number) => Math.round(s * FPS);
 
 // Szenengrenzen nach docs/VOICEOVER.md (Sekunden)
-const T = { hook: 0, stack: 14, agent: 28, compare: 70, calc: 98, letter: 132, arch: 150, outro: 168, end: 180 };
+const T = { hook: 0, stack: 13, agent: 26, compare: 57, calc: 76, letter: 106, arch: 119, outro: 137, end: 149 };
 
 /** Voice-over je Szene (ElevenLabs, Jesse); startet 0,3 s nach Szenenbeginn. */
 const VO: React.FC<{ file: string }> = ({ file }) => (
@@ -76,12 +76,12 @@ const Stack = () => {
 const Agent = () => (
   <Backdrop>
     <VO file="03-agent.mp3" />
-    <Footage from={5.1} to={22.4} rate={0.412} />
+    <Footage from={5.1} to={22.4} rate={0.6} />
     <Gutter>
       <StepCard n={1} text="Spark inspects and zooms" at={sec(1)} />
       <StepCard n={2} text="SAM 3.1 draws proof masks" at={sec(8)} />
       <StepCard n={3} text="Second look rejects false alarms" at={sec(18)} />
-      <Mascot size={190} delay={6} bounceAt={[sec(1), sec(8), sec(18), sec(30)]} />
+      <Mascot size={190} delay={6} bounceAt={[sec(1), sec(8), sec(18), sec(28)]} />
     </Gutter>
     <Caption text="Recorded run · 22 model calls · 58 s · demo photos partly synthetic (Muse Image)" />
   </Backdrop>
@@ -95,7 +95,7 @@ const Compare = () => (
     <Gutter>
       <StepCard n={1} text="Compare with move-in photos" at={sec(2)} />
       <StepCard n={2} text="Floor was already scratched" at={sec(8)} />
-      <Mascot size={210} delay={6} bounceAt={[sec(8), sec(17)]} />
+      <Mascot size={210} delay={6} bounceAt={[sec(8), sec(16)]} />
     </Gutter>
     <Caption text="Move-in vs move-out: the scratched floor was already there, so the tenant owes $0" />
   </Backdrop>
@@ -110,7 +110,7 @@ const Calc = () => (
       <Box x={100} y={462} w={1240} h={104} at={sec(16)} until={sec(19.5)} color={C.blue} label="Already at move-in: $0" />
       <Box x={100} y={566} w={1240} h={94} at={sec(19.5)} until={sec(23)} color={C.sage} label="No evidence: $0" />
       <Box x={106} y={176} w={400} h={108} at={sec(24)} until={sec(26.5)} color={C.rust} label="Landlord claims" />
-      <Box x={520} y={176} w={400} h={108} at={sec(26.5)} until={sec(32)} color={C.green} label="Your fair share" />
+      <Box x={520} y={176} w={400} h={108} at={sec(26.5)} until={sec(29)} color={C.green} label="Your fair share" />
     </Footage>
     <Gutter>
       <StepCard n={1} text="Rules are data" at={sec(3)} />
@@ -125,8 +125,8 @@ const Calc = () => (
 const Letter = () => (
   <Backdrop>
     <VO file="06-letter.mp3" />
-    <Footage from={41.1} to={46.5} rate={0.4} zoomTo={1.05} originX={50} originY={20}>
-      <Box x={1146} y={42} w={172} h={38} at={sec(6)} until={sec(13)} color={C.green} label="Evidence report (PDF)" />
+    <Footage from={41.1} to={46.5} rate={0.45} zoomTo={1.05} originX={50} originY={20}>
+      <Box x={1146} y={42} w={172} h={38} at={sec(6)} until={sec(12)} color={C.green} label="Evidence report (PDF)" />
     </Footage>
     <Gutter>
       <StepCard n={1} text="Reply letter with the evidence" at={sec(1)} />
