@@ -47,3 +47,9 @@ next-env.d.ts
 
 # Referenzbild mit unklaren Rechten (IKEA), nicht ins Repo
 data/test-vittsjo-reference.png
+
+# video (Remotion)
+/video/node_modules
+/video/out
+/video/footage
+/video/public/replay.mp4

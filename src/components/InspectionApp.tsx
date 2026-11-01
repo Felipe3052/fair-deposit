@@ -106,11 +106,13 @@ export default function InspectionApp({ configuredModels }: { configuredModels: 
   }, [phase, steps, photos, findings]);
   const activeMoveOut = activeFinding ? photos.find((p) => p.id === activeFinding.photoId) : undefined;
 
-  /** Befund wählen (Sidebar) → Auswahl + Sprung zur Foto-Evidence, nicht zum Brief. */
+  /** Befund wählen (Sidebar) → Auswahl; Befund mit Einzugsvergleich springt zum Vorher/Nachher-Panel, sonst zur Foto-Evidence. */
   function selectFinding(id: string) {
     setActiveId(id);
-    const photoId = findings[id]?.photoId;
-    if (photoId) setTimeout(() => document.getElementById(`photo-${photoId}`)?.scrollIntoView({ behavior: "smooth", block: "center" }), 60);
+    const f = findings[id];
+    if (!f) return;
+    const target = f.moveIn ? "before-after" : `photo-${f.photoId}`;
+    setTimeout(() => document.getElementById(target)?.scrollIntoView({ behavior: "smooth", block: f.moveIn ? "start" : "center" }), 80);
   }
 
   async function addFiles(files: FileList | File[]) {
@@ -547,12 +549,14 @@ export default function InspectionApp({ configuredModels }: { configuredModels: 
           )}
 
           {activeFinding?.moveIn && activeMoveOut && (
-            <BeforeAfter
-              finding={activeFinding}
-              moveOut={activeMoveOut}
-              moveIn={photos.find((p) => p.id === activeFinding.moveIn?.moveInPhotoId) ?? null}
-              onClose={() => setActiveId(null)}
-            />
+            <div id="before-after" className="scroll-mt-4">
+              <BeforeAfter
+                finding={activeFinding}
+                moveOut={activeMoveOut}
+                moveIn={photos.find((p) => p.id === activeFinding.moveIn?.moveInPhotoId) ?? null}
+                onClose={() => setActiveId(null)}
+              />
+            </div>
           )}
 
           <div className="grid gap-6 lg:grid-cols-[1.6fr_1fr] print:block">
