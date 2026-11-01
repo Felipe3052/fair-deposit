@@ -1,4 +1,4 @@
-import { Freeze, Sequence, interpolate, spring, useCurrentFrame, useVideoConfig, OffthreadVideo, staticFile } from "remotion";
+import { Freeze, Sequence, interpolate, spring, useCurrentFrame, useVideoConfig, Video, staticFile } from "remotion";
 import { C, FONT } from "./theme";
 
 export const S = 1560 / 1440; // Footage (1440 px breit) → 1560 px breite Karte
@@ -15,7 +15,7 @@ export const Footage: React.FC<{ from: number; to: number; rate?: number; zoomTo
     <div style={{ position: "absolute", left: 60, top: 40, width: 1560, height: 975, borderRadius: 22, overflow: "hidden", boxShadow: "0 24px 60px rgba(32,40,33,0.22)", background: "#fff" }}>
       <div style={{ position: "absolute", inset: 0, transform: `scale(${zoom})`, transformOrigin: `${originX}% ${originY}%` }}>
         <Freeze frame={Math.min(frame, playFrames - 1)}>
-          <OffthreadVideo src={staticFile("replay.mp4")} startFrom={Math.round(from * fps)} endAt={Math.round(to * fps)} playbackRate={rate} style={{ width: 1560, height: 975 }} muted />
+          <Video src={staticFile("replay.mp4")} startFrom={Math.round(from * fps)} endAt={Math.round(to * fps)} playbackRate={rate} style={{ width: 1560, height: 975 }} muted />
         </Freeze>
         {children}
       </div>
