@@ -109,7 +109,7 @@ export function computeShareLine(input: ShareInput, lifespans: Lifespan[]): Shar
     return {
       ...base,
       status: "lifespan_unknown",
-      explanation: `No lifespan for "${input.component}" in this rule pack. Check the official table.`,
+      explanation: `No lifespan for "${input.component}" in this rule pack. Check your local rules.`,
     };
   }
   if (input.ageYears === null) {

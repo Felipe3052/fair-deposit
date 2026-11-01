@@ -29,13 +29,13 @@ const DEMO = {
     { id: "demo-move-in", file: "living-room-move-in.jpg", room: "Living room", kind: "move_in" as const },
   ],
   claims: [
-    { id: "c1", description: "Repaint living room walls (hole, drawings)", amount: "900" },
-    { id: "c2", description: "Sand and reseal parquet floor", amount: "1200" },
-    { id: "c3", description: "Replace kitchen countertop", amount: "800" },
+    { id: "c1", description: "Repaint living room walls (hole, drawings)", amount: "600" },
+    { id: "c2", description: "Sand and reseal parquet floor", amount: "800" },
+    { id: "c3", description: "Replace kitchen countertop", amount: "400" },
   ],
   components: [
-    { component: "wall_paint" as const, installedYear: "2021" },
-    { component: "parquet_finish" as const, installedYear: "2018" },
+    { component: "wall_paint" as const, installedYear: "2023" },
+    { component: "parquet_finish" as const, installedYear: "2020" },
   ],
 };
 
@@ -64,9 +64,9 @@ const nextKey = (prefix: string) => `${prefix}${++uid}`;
 
 export default function InspectionApp({ configuredModels }: { configuredModels: InspectionReport["models"] }) {
   const [phase, setPhase] = useState<Phase>("setup");
-  const [rulePackId, setRulePackId] = useState<RulePack["id"]>("ch");
-  const [currency, setCurrency] = useState("CHF");
-  const [tenancyStart, setTenancyStart] = useState("2021-04-01");
+  const [rulePackId, setRulePackId] = useState<RulePack["id"]>("generic");
+  const [currency, setCurrency] = useState("USD");
+  const [tenancyStart, setTenancyStart] = useState("2023-09-01");
   const [moveOutDate, setMoveOutDate] = useState("");
   const [components, setComponents] = useState<ComponentAge[]>([]);
   const [photos, setPhotos] = useState<Photo[]>([]);
@@ -137,9 +137,9 @@ export default function InspectionApp({ configuredModels }: { configuredModels: 
       setPhotos(prepared);
       setClaims(DEMO.claims.map((c) => ({ ...c })));
       setComponents(DEMO.components.map((c) => ({ key: nextKey("k"), variant: "", ...c })));
-      setRulePackId("ch");
-      setCurrency("CHF");
-      setTenancyStart("2021-04-01");
+      setRulePackId("generic");
+      setCurrency("USD");
+      setTenancyStart("2023-09-01");
       setMoveOutDate("2026-10-31");
     } finally {
       setLoadingPhotos(false);
@@ -315,9 +315,9 @@ export default function InspectionApp({ configuredModels }: { configuredModels: 
             <div className="max-w-3xl">
               <p className="mb-3 text-sm font-semibold uppercase tracking-wider text-[#6f866e]">Move-out inspection agent · for tenants</p>
               <h2 className="text-4xl font-semibold leading-[1.1] tracking-tight text-[#202821] sm:text-5xl">
-                Your landlord wants <span className="text-[#b13d0c] line-through decoration-[3px]">CHF 2,900</span>.
+                Your landlord wants <span className="text-[#b13d0c] line-through decoration-[3px]">$1,800</span>.
                 <br />
-                You owe <span className="text-[#294b38]">CHF 247.50</span>.
+                You owe <span className="text-[#294b38]">$144</span>.
               </h2>
               <p className="mt-4 max-w-2xl text-lg text-[#5f6d63]">
                 Fair Deposit inspects your move-out photos, proves every damage with a pixel mask, checks your move-in photos
@@ -339,7 +339,7 @@ export default function InspectionApp({ configuredModels }: { configuredModels: 
             {[
               ["1", "Find", "Muse Spark scans every photo, zooms into corners and separates normal wear from real damage."],
               ["2", "Prove", "SAM 3.1 masks each damage pixel by pixel, a second look rejects false alarms, move-in photos reveal what was already there."],
-              ["3", "Compute", "Code — never the model — applies official lifespans. You get a fair share and a reply letter with evidence."],
+              ["3", "Compute", "Code — never the model — applies cited or typical component lifespans. You get a fair share and a reply letter with evidence."],
             ].map(([n, title, text]) => (
               <li key={n} className="rounded-2xl bg-white/70 p-4 ring-1 ring-black/5">
                 <div className="flex items-center gap-2">
@@ -427,8 +427,8 @@ export default function InspectionApp({ configuredModels }: { configuredModels: 
                 <label className="col-span-2">
                   <span className={labelClass}>Lifespan rules</span>
                   <select value={rulePackId} onChange={(e) => changePack(e.target.value as RulePack["id"])} className={inputClass}>
-                    <option value="ch">Switzerland — joint lifespan table (HEV / MV)</option>
-                    <option value="generic">Other country — generic estimate</option>
+                    <option value="generic">United States — typical useful lives (estimate)</option>
+                    <option value="ch">Switzerland — joint lifespan table (cited)</option>
                   </select>
                 </label>
                 <label>

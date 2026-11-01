@@ -14,16 +14,16 @@ const photos = [
 ].map(([id, file, room, kind]) => ({ id, room, kind, imageBase64: "data:image/jpeg;base64," + readFileSync(`public/demo/${file}`).toString("base64") }));
 
 const body = {
-  rulePack: "ch",
-  currency: "CHF",
-  tenancyStart: "2021-04-01",
+  rulePack: "generic",
+  currency: "USD",
+  tenancyStart: "2023-09-01",
   moveOutDate: MOVE_OUT_DATE,
-  components: [{ component: "wall_paint", installedYear: 2021 }, { component: "parquet_finish", installedYear: 2018 }],
+  components: [{ component: "wall_paint", installedYear: 2023 }, { component: "parquet_finish", installedYear: 2020 }],
   photos,
   landlordClaims: [
-    { id: "c1", description: "Repaint living room walls (hole, drawings)", amount: 900 },
-    { id: "c2", description: "Sand and reseal parquet floor", amount: 1200 },
-    { id: "c3", description: "Replace kitchen countertop", amount: 800 },
+    { id: "c1", description: "Repaint living room walls (hole, drawings)", amount: 600 },
+    { id: "c2", description: "Sand and reseal parquet floor", amount: 800 },
+    { id: "c3", description: "Replace kitchen countertop", amount: 400 },
   ],
 };
 

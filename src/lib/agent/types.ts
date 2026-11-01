@@ -15,7 +15,7 @@ const componentSchema = z.enum([
 
 export const inspectionRequestSchema = z.object({
   rulePack: z.enum(["ch", "generic"]),
-  currency: z.string().trim().min(1).max(8).default("CHF"),
+  currency: z.string().trim().min(1).max(8).default("USD"),
   tenancyStart: z.iso.date(),
   moveOutDate: z.iso.date(),
   /** Bekanntes Baujahr/Renovationsjahr einzelner Bauteile; sonst gilt der Mietbeginn nicht automatisch. */
