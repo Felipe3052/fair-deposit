@@ -319,6 +319,7 @@ export default function InspectionApp({ configuredModels }: { configuredModels: 
                 <br />
                 You owe <span className="text-[#294b38]">$144</span>.
               </h2>
+              <p className="mt-2 text-xs font-medium uppercase tracking-wider text-[#849084]">Example from the demo apartment — run it yourself below</p>
               <p className="mt-4 max-w-2xl text-lg text-[#5f6d63]">
                 Fair Deposit inspects your move-out photos, proves every damage with a pixel mask, checks your move-in photos
                 for damage that was already there, and computes what you fairly owe from each component&apos;s remaining lifespan.
