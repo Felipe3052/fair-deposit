@@ -39,7 +39,7 @@ const Hook: React.FC = () => (
     <VO file="01-hook.mp3" />
     <Camera keys={[wide(0), wide(40), fit(100, k.hero.headline, { pad: 1.3, maxZ: 1.4 }), fit(210, k.hero.headline, { pad: 1.3, maxZ: 1.4 }), fit(270, k.hero.watchButton, { pad: 2.6, maxZ: 1.35 }), fit(340, k.hero.watchButton, { pad: 2.6, maxZ: 1.35 }), wide(389)]}>
       <Still file="still-hero.png">
-        <Ring r={k.hero.headline} at={95} until={205} color={C.rust} label="The claim" labelBelow />
+        <Ring r={k.hero.headline} at={95} until={205} color={C.rust} />
         <Bubble near={k.hero.mascot} text="Is that fair?" at={10} duration={72} />
       </Still>
     </Camera>
@@ -199,7 +199,7 @@ const Calc: React.FC = () => {
 /** Brief: Standbilder (Briefkopf, dann Summe) mit ruhiger Überblendung und Fokus auf Text und PDF-Knopf. */
 const Letter: React.FC = () => {
   const frame = useCurrentFrame();
-  const endOpacity = interpolate(frame, [sec(5.2), sec(6.4)], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+  const endOpacity = interpolate(frame, [sec(6.2), sec(6.2) + 5], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
   const keys: Key[] = [
     wide(0),
     wide(20),
